@@ -15,12 +15,16 @@ from naga_control.service.runtime import (
 )
 
 
+def active_configuration() -> Configuration:
+    return replace(default_configuration(), hardware_writes=True)
+
+
 async def test_service_starts_one_connection_and_releases_before_shutdown() -> None:
     worker = Worker()
     session = Session()
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         worker,
         lambda connection, configuration: session,
     )
@@ -38,7 +42,7 @@ async def test_topology_change_stops_the_old_session_and_builds_a_new_one() -> N
     sessions: list[Session] = []
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         worker,
         lambda connection, configuration: _session(sessions),
     )
@@ -68,7 +72,7 @@ async def test_hardware_rescan_rebuilds_input_after_mode_verification() -> None:
     sessions: list[Session] = []
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         worker,
         lambda connection, configuration: _session(sessions),
     )
@@ -97,7 +101,7 @@ async def test_topology_application_applies_profile_settings_and_reports_failure
     worker.settings_failures = (SettingsFailure("scroll_mode", "boom"),)
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         worker,
         lambda connection, configuration: Session(),
     )
@@ -111,7 +115,7 @@ async def test_topology_application_applies_profile_settings_and_reports_failure
 async def test_device_action_state_updates_the_service_snapshot() -> None:
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         Worker(),
         lambda connection, configuration: Session(),
     )
@@ -130,6 +134,17 @@ async def test_device_action_state_updates_the_service_snapshot() -> None:
         "observed_mode": None,
         "mode_ready": False,
         "mode_error": "device action lost hardware access",
+        "hardware_writes_enabled": True,
+        "remapping_active": True,
+        "lighting_writes_enabled": False,
+        "observation_sources": {
+            "dpi": "openrazer-device-read",
+            "dpi_stages": "openrazer-device-read",
+            "scroll": "openrazer-device-read",
+            "power": "openrazer-device-read",
+            "poll_rate": "openrazer-daemon-cache",
+            "lighting": "not-read",
+        },
         "observed": {},
     }
     await service.stop()
@@ -140,7 +155,7 @@ async def test_topology_removal_stops_the_session_without_building_one() -> None
     sessions: list[Session] = []
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         worker,
         lambda connection, configuration: _session(sessions),
     )
@@ -172,7 +187,7 @@ async def test_calibration_rebuilds_passthrough_then_adopts_observed_settings() 
 
     service = NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         worker,
         factory,
         store,
@@ -200,6 +215,9 @@ async def test_calibration_rebuilds_passthrough_then_adopts_observed_settings() 
         scroll_mode_options=("tactile", "free_spin"),
         scroll_acceleration=False,
         scroll_smart_reel=True,
+        poll_rate=500,
+        idle_seconds=600,
+        low_battery_threshold=15,
     )
     assert await service.end_calibration() is False
 
@@ -211,6 +229,8 @@ async def test_calibration_rebuilds_passthrough_then_adopts_observed_settings() 
         False,
         True,
     )
+    assert adopted.poll_rate == 500
+    assert (adopted.power.idle_seconds, adopted.power.low_battery_threshold) == (600, 15)
     assert service.configuration_revision() == 1
     saved = store.saved[-1]
     assert isinstance(saved, Configuration)
@@ -234,7 +254,7 @@ async def test_apply_configuration_persists_and_rebuilds_with_the_new_profile() 
     configurations: list[object] = []
     service = _service(store=store, configurations=configurations)
     await service.start()
-    updated = replace(default_configuration(), revision=1)
+    updated = replace(active_configuration(), revision=1)
 
     revision = await service.apply_configuration(0, dump_toml(updated))
 
@@ -249,12 +269,12 @@ async def test_apply_configuration_rejects_stale_revisions_without_touching_stat
     store = Store()
     service = _service(store=store)
     await service.start()
-    updated = replace(default_configuration(), revision=1)
+    updated = replace(active_configuration(), revision=1)
 
     with pytest.raises(StaleConfigurationRevisionError):
         await service.apply_configuration(7, dump_toml(updated))
     with pytest.raises(StaleConfigurationRevisionError):
-        await service.apply_configuration(0, dump_toml(default_configuration()))
+        await service.apply_configuration(0, dump_toml(active_configuration()))
 
     assert store.saved == []
     assert service.configuration_revision() == 0
@@ -292,7 +312,7 @@ def _service(
 ) -> NagaService:
     return NagaService(
         lambda: (_connection(),),
-        lambda: None,
+        active_configuration,
         Worker(),
         lambda connection, configuration: _record(configuration, configurations),
         store,

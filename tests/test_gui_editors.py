@@ -123,7 +123,7 @@ def test_set_bindings_rejects_unknown_controls() -> None:
         set_bindings(
             document,
             profile_id,
-            cast(dict[LogicalControlId, Action], {"side_99_1": KeyAction(key="f13")}),
+            cast(dict[LogicalControlId, Action], {"side_99_1": KeyAction(key="f12")}),
         )
 
 

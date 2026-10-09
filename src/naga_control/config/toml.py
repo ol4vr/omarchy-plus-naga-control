@@ -32,13 +32,31 @@ from naga_control.domain.profiles import (
 )
 
 ROOT_FIELDS = frozenset(
-    {"schema_version", "revision", "default_profile", "active_profile", "profiles", "mode"}
+    {
+        "schema_version",
+        "revision",
+        "default_profile",
+        "active_profile",
+        "profiles",
+        "mode",
+        "hardware_writes",
+    }
 )
-ROOT_OPTIONAL_FIELDS = frozenset({"mode"})
+ROOT_OPTIONAL_FIELDS = frozenset({"mode", "hardware_writes"})
 PROFILE_FIELDS = frozenset(
-    {"display_name", "plate_layout", "bindings", "dpi", "scroll", "lighting", "power", "poll_rate"}
+    {
+        "display_name",
+        "plate_layout",
+        "bindings",
+        "dpi",
+        "scroll",
+        "lighting",
+        "power",
+        "poll_rate",
+        "lighting_writes",
+    }
 )
-PROFILE_OPTIONAL_FIELDS = frozenset({"poll_rate"})
+PROFILE_OPTIONAL_FIELDS = frozenset({"poll_rate", "lighting_writes"})
 
 
 def parse_toml(document: str) -> Configuration:
@@ -62,8 +80,14 @@ def parse_toml(document: str) -> Configuration:
         (_slug(identifier, "profiles"), _parse_profile(value, f"profiles.{identifier}"))
         for identifier, value in profile_table.items()
     )
+    hardware_writes = _boolean(root.get("hardware_writes", False), "hardware_writes")
     return Configuration(
-        revision, default_profile, active_profile, profiles, mode=cast(DeviceMode, mode)
+        revision,
+        default_profile,
+        active_profile,
+        profiles,
+        mode=cast(DeviceMode, mode),
+        hardware_writes=hardware_writes,
     )
 
 
@@ -85,6 +109,7 @@ def _parse_profile(value: object, path: str) -> Profile:
         lighting=_parse_lighting(_required(table, "lighting", path), f"{path}.lighting"),
         power=_parse_power(_required(table, "power", path), f"{path}.power"),
         poll_rate=_parse_poll_rate(table, path),
+        lighting_writes=_boolean(table.get("lighting_writes", False), f"{path}.lighting_writes"),
     )
 
 

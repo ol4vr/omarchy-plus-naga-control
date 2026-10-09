@@ -22,6 +22,7 @@ from naga_control.domain.profiles import ScrollMode
 from naga_control.gui.buttons_page import ButtonsPage
 from naga_control.gui.device_page import DevicePage
 from naga_control.gui.editors import set_scroll
+from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.mouse_settings_page import MouseSettingsPage
 from naga_control.gui.presenter import ApplyOutcome, GuiPresenter
@@ -82,7 +83,7 @@ class MainWindow(QMainWindow):
         column.addLayout(header)
         column.addWidget(self.tabs)
         self.setCentralWidget(central)
-        self.model.add_listener(self.model_changed.emit)
+        subscribe_model(self, self.model, self.model_changed.emit)
         self.model_changed.connect(self._update_header, Qt.ConnectionType.QueuedConnection)
         self._update_header()
         opening_size = QSize(1280, 660)
@@ -99,6 +100,7 @@ class MainWindow(QMainWindow):
 
         self._tray = TrayIcon(
             model,
+            parent=self,
             toggle_window=self._toggle_visibility,
             select_profile=self._request_profile,
             change_scroll=self._request_scroll,

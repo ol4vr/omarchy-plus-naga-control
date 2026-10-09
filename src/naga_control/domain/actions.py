@@ -39,6 +39,7 @@ MODIFIER_KEYS = frozenset(
         "right_super",
     }
 )
+RESERVED_OUTPUT_KEYS = frozenset({"f13"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +54,7 @@ class KeyAction:
 
     def __post_init__(self) -> None:
         _validate_token(self.key, "key")
+        _reject_reserved_output(self.key)
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +74,7 @@ class KeyComboAction:
             if modifier not in MODIFIER_KEYS:
                 raise ConfigValidationError("modifiers", "must contain only modifier key tokens")
         _validate_token(self.key, "key")
+        _reject_reserved_output(self.key)
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,3 +109,8 @@ def _validate_token(value: str, field_path: str) -> None:
         raise ConfigValidationError(field_path, "must use lowercase ASCII key-token syntax")
     if value.startswith(("key_", "btn_")):
         raise ConfigValidationError(field_path, "must not use a Linux KEY_ or BTN_ name")
+
+
+def _reject_reserved_output(value: str) -> None:
+    if value in RESERVED_OUTPUT_KEYS:
+        raise ConfigValidationError("key", "is reserved for physical-keyboard PTT isolation")

@@ -126,7 +126,7 @@ def service_for(
 
     return NagaService(
         lambda: (connection(),),
-        lambda: replace(default_configuration(), mode=mode),
+        lambda: replace(default_configuration(), mode=mode, hardware_writes=True),
         worker,
         factory,
         state_poll_interval=poll,

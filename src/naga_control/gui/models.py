@@ -112,13 +112,22 @@ class ServiceModel:
         self.configuration_revision: int | None = None
         self.configuration_document: str | None = None
         self.apply_status: str | None = None
-        self._listeners: list[Callable[[], None]] = []
+        self._listeners: dict[int, Callable[[], None]] = {}
+        self._next_listener = 0
 
-    def add_listener(self, listener: Callable[[], None]) -> None:
-        self._listeners.append(listener)
+    def add_listener(self, listener: Callable[[], None]) -> Callable[..., None]:
+        """Subscribe and return an idempotent lifetime-safe unsubscribe callback."""
+        token = self._next_listener
+        self._next_listener += 1
+        self._listeners[token] = listener
+
+        def unsubscribe(*_args: object) -> None:
+            self._listeners.pop(token, None)
+
+        return unsubscribe
 
     def _changed(self) -> None:
-        for listener in tuple(self._listeners):
+        for listener in tuple(self._listeners.values()):
             listener()
 
     def mark_reachable(self) -> None:

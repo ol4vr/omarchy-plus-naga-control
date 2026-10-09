@@ -142,4 +142,5 @@ def _profile(
             scroll_wheel=scroll_wheel or green,
         ),
         poll_rate=poll_rate,
+        lighting_writes=True,
     )

@@ -9,6 +9,7 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from naga_control.config import dump_toml, parse_toml
@@ -107,6 +108,7 @@ def _window(qapp: QApplication) -> tuple[MainWindow, FakeClient]:
     window = MainWindow(presenter, model, _sync_run)
     window._poll_timer.stop()  # pyright: ignore[reportPrivateUsage]
     _sync_run(presenter.refresh)
+    QCoreApplication.sendPostedEvents()
     qapp.processEvents()
     return window, client
 

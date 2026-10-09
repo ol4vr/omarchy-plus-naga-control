@@ -27,6 +27,7 @@ from naga_control.gui.buttons_rows import ButtonRow, build_button_row, sync_deta
 from naga_control.gui.editors import set_bindings
 from naga_control.gui.mapping_map import MappingMapView
 from naga_control.gui.mapping_zones import MappingZone, all_zones
+from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.presenter import ApplyOutcome, GuiPresenter
 from naga_control.gui.worker import Runner
@@ -66,7 +67,7 @@ class ButtonsPage(QWidget):
         self._loading = False
         self.apply_finished.connect(self._finish_apply, Qt.ConnectionType.QueuedConnection)
 
-        self.model.add_listener(self.model_changed.emit)
+        subscribe_model(self, self.model, self.model_changed.emit)
         self.model_changed.connect(self._on_model_changed, Qt.ConnectionType.QueuedConnection)
 
         self.profile_label = QLabel("unknown profile")

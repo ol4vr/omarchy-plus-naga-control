@@ -50,13 +50,16 @@ def apply_steps(client: object, profile: Profile) -> tuple[SettingsFailure, ...]
             lambda: mutable.set_low_battery_threshold(profile.power.low_battery_threshold),
         ),
         ("poll_rate", lambda: setattr(mutable, "poll_rate", profile.poll_rate)),
-        ("lighting_thumb_grid", lambda: _apply_matrix(client, profile.lighting.thumb_grid)),
-        ("lighting_logo", lambda: _apply_misc(client, "logo", profile.lighting.logo)),
-        (
-            "lighting_scroll_wheel",
-            lambda: _apply_misc(client, "scroll_wheel", profile.lighting.scroll_wheel),
-        ),
     )
+    if profile.lighting_writes:
+        steps += (
+            ("lighting_thumb_grid", lambda: _apply_matrix(client, profile.lighting.thumb_grid)),
+            ("lighting_logo", lambda: _apply_misc(client, "logo", profile.lighting.logo)),
+            (
+                "lighting_scroll_wheel",
+                lambda: _apply_misc(client, "scroll_wheel", profile.lighting.scroll_wheel),
+            ),
+        )
     failures: list[SettingsFailure] = []
     for setting, write in steps:
         try:

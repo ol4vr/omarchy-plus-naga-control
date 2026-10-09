@@ -1,5 +1,3 @@
-"""Profiles page: unified dropdown for editing plus explicit activation."""
-
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt, Signal
@@ -23,6 +21,7 @@ from naga_control.gui.editors import (
     rename_profile,
     set_plate_layout,
 )
+from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.presenter import ApplyOutcome, GuiPresenter
 from naga_control.gui.profile_controls import activation_gate
@@ -59,7 +58,7 @@ class ProfilesPage(QWidget):
         self._updating = False
         self.confirm_profile_change: Callable[[], bool] = lambda: True
 
-        self.model.add_listener(self.model_changed.emit)
+        subscribe_model(self, self.model, self.model_changed.emit)
         self.model_changed.connect(self._on_model_changed, Qt.ConnectionType.QueuedConnection)
 
         self.active_label = QLabel("Active: unknown")

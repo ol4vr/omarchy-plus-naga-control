@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QFormLayout, QHBoxLayout, QLabel, QPushButton, QVB
 from naga_control.config import parse_toml
 from naga_control.domain.errors import ConfigValidationError
 from naga_control.domain.profiles import Profile
+from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.presenter import ApplyOutcome, GuiPresenter
 from naga_control.gui.worker import Runner
@@ -41,7 +42,7 @@ class ProfileSettingsPage(QWidget):
         self.apply_finished.connect(self._finish_apply, Qt.ConnectionType.QueuedConnection)
 
         if not managed:
-            self.model.add_listener(self.model_changed.emit)
+            subscribe_model(self, self.model, self.model_changed.emit)
             self.model_changed.connect(self._on_model_changed, Qt.ConnectionType.QueuedConnection)
 
         self.profile_label = QLabel("unknown profile")

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from dataclasses import replace
 
 from naga_control.adapters.evdev.discovery import EventNode, NagaConnection, Transport
 from naga_control.adapters.openrazer.backend import OpenRazerBackend
@@ -149,7 +150,7 @@ def test_apply_profile_settings_writes_every_step_and_collects_partial_failures(
     device = FakeDevice(failing="scroll_mode_set")
     backend = OpenRazerBackend(lambda: FakeManager((device,)))
     backend.rescan((_connection("wired"),))
-    profile = default_configuration().profile("default")
+    profile = replace(default_configuration().profile("default"), lighting_writes=True)
 
     state, failures = backend.apply_profile_settings(profile)
 

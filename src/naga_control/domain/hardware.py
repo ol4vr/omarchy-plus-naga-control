@@ -84,6 +84,9 @@ class HardwareState:
     scroll_acceleration: bool | None = None
     scroll_smart_reel: bool | None = None
     poll_rate: int | None = None
+    poll_rate_verified: bool = False
+    idle_seconds: int | None = None
+    low_battery_threshold: int | None = None
     battery_percent: float | None = None
     charging: bool | None = None
     firmware_version: str | None = None
@@ -91,6 +94,8 @@ class HardwareState:
     def __post_init__(self) -> None:
         if type(self.generation) is not int or self.generation < 0:
             raise ValueError("generation must be a non-negative integer")
+        if type(self.poll_rate_verified) is not bool:
+            raise ValueError("poll_rate_verified must be a boolean")
         object.__setattr__(self, "dpi_stages", tuple(self.dpi_stages))
         object.__setattr__(self, "scroll_mode_options", tuple(self.scroll_mode_options))
         if self.status == "available":
@@ -105,6 +110,8 @@ class HardwareState:
                     self.scroll_mode,
                     self.scroll_acceleration,
                     self.scroll_smart_reel,
+                    self.idle_seconds,
+                    self.low_battery_threshold,
                 )
             )
             or self.dpi_stages
@@ -132,6 +139,10 @@ def _validate_available_state(state: HardwareState) -> None:
         raise ValueError("scroll_mode_options must not contain duplicates")
     if type(state.scroll_acceleration) is not bool or type(state.scroll_smart_reel) is not bool:
         raise ValueError("scroll feature values must be booleans")
+    if state.idle_seconds is not None and not 60 <= state.idle_seconds <= 900:
+        raise ValueError("idle_seconds must be from 60 through 900")
+    if state.low_battery_threshold is not None and not 0 <= state.low_battery_threshold <= 25:
+        raise ValueError("low_battery_threshold must be from 0 through 25")
 
 
 def _validate_dpi(value: int) -> None:

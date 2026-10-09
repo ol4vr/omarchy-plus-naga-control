@@ -1,0 +1,28 @@
+# Hugin x86_64 runtime lock for the owned AppDir build.
+# PyPI release-file SHA-256 values were revalidated on 2026-10-09.
+dbus-next==0.2.3 \
+    --hash=sha256:58948f9aff9db08316734c0be2a120f6dc502124d9642f55e90ac82ffb16a18b
+dbus-python==1.5.0 \
+    --hash=sha256:ac94ce330879108e5d37105164cc14b595bdf9326d2ce4a5acad6c1ab2bf6476
+evdev==2.0.0 \
+    --hash=sha256:442fb3f4c8dfc9e61e901133c356220c02d663eca8f34722e0cecdd637eba504
+numpy==2.5.3 \
+    --hash=sha256:b0521d0f4aebb6e06189451025fa17a913287b13c03d5fe05c017333b654ea5b
+packaging==26.3 \
+    --hash=sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c
+PySide6==6.12.0 \
+    --hash=sha256:d13ed4d0053cc20f3e4e0fdbf12790a9b7f958d7e22c0843411ecfa8c799e2a9
+PySide6_Addons==6.12.0 \
+    --hash=sha256:4ab38c0017f0453671a9313d3a53ca1c0e378924f54b07e596bcea94a9642391
+PySide6_Essentials==6.12.0 \
+    --hash=sha256:16f4b5e41daf49235ae048458243da9efe5f3d8040f9cc5aa454ce69893d3bd9
+PySide6_Pdf==6.12.0.140 \
+    --hash=sha256:0c94370b6b9d65fbfe54f9d6d25df0677db0cdcfd0a842a63958a3603a42007c
+PySide6_WebEngine==6.12.0.140 \
+    --hash=sha256:c041c9921d7c91c9e51a2c027f434d05c3c59baa2c8f17b71dc8194e77791f06
+pyudev==0.24.5 \
+    --hash=sha256:a9c62d04a83472fb05ad5e014ef85933e5cf2fef193caf8b77bb7a9e8ded4812
+shiboken6==6.12.0 \
+    --hash=sha256:3bde565bb0890044b5c7f63808adddede5abc241e9395a2bfed61919884d6240
+tomli-w==1.2.0 \
+    --hash=sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90

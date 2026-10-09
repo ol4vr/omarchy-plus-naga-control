@@ -46,6 +46,8 @@ def read_hardware_state(
         scroll_acceleration=acceleration,
         scroll_smart_reel=smart_reel,
         poll_rate=_optional_int(client, "poll_rate"),
+        idle_seconds=_optional_method_int(client, "get_idle_time", 60, 900),
+        low_battery_threshold=_optional_method_int(client, "get_low_battery_threshold", 0, 25),
         battery_percent=_optional_battery(client),
         charging=_optional_bool(client, "is_charging"),
         firmware_version=_optional_firmware(client),
@@ -106,6 +108,17 @@ def _optional_int(client: object, name: str) -> int | None:
     except Exception:
         return None
     return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _optional_method_int(client: object, name: str, minimum: int, maximum: int) -> int | None:
+    try:
+        method = getattr(client, name)
+        value = method()
+    except Exception:
+        return None
+    if type(value) is not int or not minimum <= value <= maximum:
+        return None
+    return value
 
 
 def _optional_bool(client: object, name: str) -> bool | None:

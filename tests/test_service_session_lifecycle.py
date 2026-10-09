@@ -4,14 +4,18 @@ from dataclasses import replace
 
 import pytest
 from test_configuration_authority import Store
-from test_service_lifecycle_failures import FailingSession, FailingWorker, make_service
+from test_service_lifecycle_failures import (
+    FailingSession,
+    FailingWorker,
+    active_configuration,
+    make_service,
+)
 from test_service_mode import Session as ModeSession
 from test_service_mode import Worker as ModeWorker
 from test_service_mode import connection
 from test_service_runtime import Session, Worker
 
 from naga_control.config import dump_toml, parse_toml
-from naga_control.domain.defaults import default_configuration
 from naga_control.domain.errors import ConfigValidationError
 from naga_control.service.configuration_authority import (
     StaleConfigurationRevisionError,
@@ -30,7 +34,7 @@ def test_error_reexports_preserve_identity() -> None:
 
 
 async def test_invalid_document_is_parsed_before_waiting_for_service_lock() -> None:
-    service = NagaService(lambda: (), lambda: None, Worker(), lambda _c, _cfg: Session())
+    service = NagaService(lambda: (), active_configuration, Worker(), lambda _c, _cfg: Session())
     async with service._lock:  # pyright: ignore[reportPrivateUsage]
         with pytest.raises(ConfigValidationError):
             await asyncio.wait_for(service.apply_configuration(9, ""), timeout=1)
@@ -49,13 +53,15 @@ async def test_persistence_precedes_topology_rebuild_and_survives_rebuild_failur
             raise RuntimeError("topology rebuild failed")
         return ()
 
-    service = NagaService(discover, lambda: None, Worker(), lambda _c, _cfg: Session(), store)
+    service = NagaService(
+        discover, active_configuration, Worker(), lambda _c, _cfg: Session(), store
+    )
     await service.start()
     try:
         with pytest.raises(RuntimeError, match="topology rebuild failed"):
             if operation == "apply":
                 await service.apply_configuration(
-                    0, dump_toml(replace(default_configuration(), revision=1))
+                    0, dump_toml(replace(active_configuration(), revision=1))
                 )
             else:
                 await service.select_profile("default")
@@ -74,13 +80,15 @@ async def test_persistence_failure_does_not_rebuild_topology() -> None:
         discoveries.append("discover")
         return ()
 
-    service = NagaService(discover, lambda: None, Worker(), lambda _c, _cfg: Session(), store)
+    service = NagaService(
+        discover, active_configuration, Worker(), lambda _c, _cfg: Session(), store
+    )
     await service.start()
     store.error = OSError("cannot save")
     try:
         with pytest.raises(OSError, match="cannot save"):
             await service.apply_configuration(
-                0, dump_toml(replace(default_configuration(), revision=1))
+                0, dump_toml(replace(active_configuration(), revision=1))
             )
         assert discoveries == ["discover"]
         assert service.configuration_revision() == 0
@@ -100,10 +108,10 @@ async def test_cancelled_configuration_rebuild_keeps_old_session_cleanup_owned()
         sessions.append(session)
         return session
 
-    service = NagaService(lambda: (connection(),), lambda: None, worker, factory)
+    service = NagaService(lambda: (connection(),), active_configuration, worker, factory)
     await service.start()
     change = asyncio.create_task(
-        service.apply_configuration(0, dump_toml(replace(default_configuration(), revision=1)))
+        service.apply_configuration(0, dump_toml(replace(active_configuration(), revision=1)))
     )
     recovery: asyncio.Task[int] | None = None
     try:
@@ -115,7 +123,7 @@ async def test_cancelled_configuration_rebuild_keeps_old_session_cleanup_owned()
         assert service.snapshot()["mode_ready"] is False
         before = list(events)
         recovery = asyncio.create_task(
-            service.apply_configuration(1, dump_toml(replace(default_configuration(), revision=2)))
+            service.apply_configuration(1, dump_toml(replace(active_configuration(), revision=2)))
         )
         await asyncio.sleep(0)
         assert not recovery.done()
@@ -144,12 +152,14 @@ async def test_failed_session_barrier_prevents_recovery_but_not_final_worker_cle
             raise failure
 
     session = FailedSession(events)
-    service = NagaService(lambda: (connection(),), lambda: None, worker, lambda _c, _cfg: session)
+    service = NagaService(
+        lambda: (connection(),), active_configuration, worker, lambda _c, _cfg: session
+    )
     await service.start()
     try:
         with pytest.raises(OSError) as raised:
             await service.apply_configuration(
-                0, dump_toml(replace(default_configuration(), revision=1))
+                0, dump_toml(replace(active_configuration(), revision=1))
             )
         assert raised.value is failure
         before = list(events)
@@ -173,7 +183,7 @@ async def test_failed_session_barrier_prevents_recovery_but_not_final_worker_cle
 
 async def test_service_cannot_restart_after_terminal_shutdown() -> None:
     worker = Worker()
-    service = NagaService(lambda: (), lambda: None, worker, lambda _c, _cfg: Session())
+    service = NagaService(lambda: (), active_configuration, worker, lambda _c, _cfg: Session())
     await service.start()
     await service.stop()
     before = list(worker.events)
@@ -188,7 +198,9 @@ async def test_shutdown_joins_ancillary_failures_without_replacing_poll_error(
 ) -> None:
     worker = Worker()
     session = Session()
-    service = NagaService(lambda: (connection(),), lambda: None, worker, lambda _c, _cfg: session)
+    service = NagaService(
+        lambda: (connection(),), active_configuration, worker, lambda _c, _cfg: session
+    )
     primary = OSError("poll failed first")
 
     async def poll() -> None:

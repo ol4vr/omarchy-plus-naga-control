@@ -13,15 +13,20 @@ def snapshot_document(
     mode_error: str | None,
     has_session: bool,
 ) -> dict[str, object]:
-    ready = (
+    mode_ready = (
         state is not None
         and state.status == "available"
         and configuration is not None
         and observed_mode == configuration.mode
-        and (observed_mode == "firmware" or has_session)
+        and (not configuration.hardware_writes or observed_mode == "firmware" or has_session)
     )
     status = state.status if state is not None else "absent"
-    if status == "available" and not ready:
+    if (
+        status == "available"
+        and configuration is not None
+        and configuration.hardware_writes
+        and not mode_ready
+    ):
         status = "unavailable"
     return {
         "status": status,
@@ -32,8 +37,25 @@ def snapshot_document(
         "calibrating": calibrating,
         "desired_mode": configuration.mode if configuration is not None else None,
         "observed_mode": observed_mode,
-        "mode_ready": ready,
+        "mode_ready": mode_ready,
         "mode_error": mode_error,
+        "hardware_writes_enabled": (
+            configuration.hardware_writes if configuration is not None else False
+        ),
+        "remapping_active": has_session,
+        "lighting_writes_enabled": (
+            configuration.profile(configuration.active_profile).lighting_writes
+            if configuration is not None
+            else False
+        ),
+        "observation_sources": {
+            "dpi": "openrazer-device-read",
+            "dpi_stages": "openrazer-device-read",
+            "scroll": "openrazer-device-read",
+            "power": "openrazer-device-read",
+            "poll_rate": "openrazer-daemon-cache",
+            "lighting": "not-read",
+        },
         "observed": observed_hardware(state),
     }
 
@@ -52,6 +74,9 @@ def observed_hardware(state: HardwareState | None) -> dict[str, object]:
         "scroll_acceleration": state.scroll_acceleration,
         "scroll_smart_reel": state.scroll_smart_reel,
         "poll_rate": state.poll_rate,
+        "poll_rate_verified": state.poll_rate_verified,
+        "idle_seconds": state.idle_seconds,
+        "low_battery_threshold": state.low_battery_threshold,
         "battery_percent": state.battery_percent,
         "charging": state.charging,
         "firmware_version": state.firmware_version,

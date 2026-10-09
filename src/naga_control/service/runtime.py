@@ -1,5 +1,3 @@
-"""Lifecycle core for one active Naga transport and its remapping session."""
-
 import asyncio
 import contextlib
 import logging
@@ -10,6 +8,7 @@ from naga_control.domain.hardware import DeviceMode, HardwareState, SettingsFail
 from naga_control.domain.profiles import Configuration
 from naga_control.ports.config_store import ConfigurationStore
 from naga_control.ports.hardware import NagaTopology
+from naga_control.service.activation_policy import validate_first_activation
 from naga_control.service.calibration import adopt_observed_settings, passthrough_configuration
 from naga_control.service.configuration_authority import ConfigurationAuthority
 from naga_control.service.configuration_authority import (
@@ -97,6 +96,11 @@ class NagaService:
                 try:
                     mode = await self._worker.read_device_mode()
                     self._observed_mode = mode
+                    if not self._config.require_current().hardware_writes:
+                        self._mode_error = None
+                        self._state = await self._worker.refresh_state()
+                        await self._sessions.stop()
+                        continue
                     if mode != self._config.require_current().mode:
                         self._mode_error = f"device mode drifted to {mode}"
                         await self._sessions.stop()
@@ -153,7 +157,11 @@ class NagaService:
         await self._require_mutable()
         await self._sessions.stop()
         state = await self._rescan(connections)
-        if self._mode_ready() and self._config.require_current().mode == "software":
+        if (
+            self._config.require_current().hardware_writes
+            and self._mode_ready()
+            and self._config.require_current().mode == "software"
+        ):
             await self._apply_profile_settings()
             if self._mode_ready() and len(connections) == 1 and connections[0].nodes:
                 await self._start_session(connections[0])
@@ -215,7 +223,8 @@ class NagaService:
             await self._sessions.stop()
             state = await self._rescan(connections)
             if (
-                self._mode_ready()
+                self._config.require_current().hardware_writes
+                and self._mode_ready()
                 and self._config.require_current().mode == "software"
                 and self._sessions.current is None
             ):
@@ -256,6 +265,8 @@ class NagaService:
         try:
             observed = await self._worker.read_device_mode()
             self._observed_mode = observed
+            if not self._config.require_current().hardware_writes:
+                return state
             if observed != desired:
                 await self._sessions.stop()
                 try:
@@ -299,7 +310,7 @@ class NagaService:
     def record_hardware_state(self, state: HardwareState) -> None:
         if (
             self._started
-            and self._mode_ready()
+            and (not self._config.require_current().hardware_writes or self._mode_ready())
             and self._config.require_current().mode == "software"
             and (self._state is None or state.generation >= self._state.generation)
         ):
@@ -321,6 +332,8 @@ class NagaService:
         async with self._lock:
             self._config.validate_revision(expected_revision, configuration)
             await self._require_mutable()
+            current = self._config.require_current()
+            validate_first_activation(current, configuration, self._state, self._observed_mode)
             revision = self._config.apply(expected_revision, configuration)
             await self._apply_topology(self._discover())
             return revision

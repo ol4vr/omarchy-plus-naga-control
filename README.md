@@ -16,6 +16,13 @@ The goal is one coherent application for hardware settings and button
 remapping, backed by OpenRazer, evdev, and uinput. It is not a generic Razer
 frontend and it does not reimplement OpenRazer's HID protocol.
 
+This Omarchy+-owned development baseline is pinned and documented in
+[PROVENANCE.md](PROVENANCE.md). Its safe Hugin staging, no-write discovery,
+input/PTT, RGB, and recovery boundaries are in
+[the experimental integration contract](docs/omarchy-integration.md). The
+legacy upstream installer below is retained for provenance and regression
+coverage; it is not the Omarchy+ installation path and must not be run on Hugin.
+
 ## Install
 
 Requires an unprivileged Linux x86_64 desktop session, user systemd/session

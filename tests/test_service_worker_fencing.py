@@ -1,6 +1,7 @@
 """Real service/worker fencing with fake hardware, not physical-release proof."""
 
 import asyncio
+from dataclasses import replace
 from threading import get_ident
 
 import pytest
@@ -56,7 +57,8 @@ async def test_failed_session_cleanup_keeps_actual_worker_fenced_until_shutdown(
         sessions.append(session)
         return session
 
-    service = NagaService(lambda: (connection(),), default_configuration, worker, factory)
+    configuration = replace(default_configuration(), hardware_writes=True)
+    service = NagaService(lambda: (connection(),), lambda: configuration, worker, factory)
     pending: asyncio.Task[HardwareState] | None = None
     try:
         assert await bounded(service.start()) == available()

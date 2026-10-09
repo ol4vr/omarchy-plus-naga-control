@@ -40,7 +40,7 @@ class Scenario:
         self.events: list[str] = []
         self.worker, self.store = Worker(self.events), Store()
         self.sessions: list[BarrierSession] = []
-        configuration = default_configuration()
+        configuration = replace(default_configuration(), hardware_writes=True)
         self.configuration = replace(
             configuration,
             profiles=(
@@ -112,13 +112,14 @@ async def test_real_session_rollback_failure_remains_a_service_barrier(rebuild: 
         sessions.append(session)
         return session
 
-    service = NagaService(lambda: (connection(),), default_configuration, worker, factory, store)
+    configuration = replace(default_configuration(), hardware_writes=True)
+    service = NagaService(lambda: (connection(),), lambda: configuration, worker, factory, store)
     try:
         await bounded(service.start())
         assert service.snapshot()["mode_ready"] is True
         assert first.running
         events.clear()
-        updated = replace(default_configuration(), revision=1)
+        updated = replace(configuration, revision=1)
         with pytest.raises(RuntimeError) as raised:
             await bounded(
                 service.apply_topology((connection(),))

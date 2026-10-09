@@ -7,11 +7,12 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QActionGroup, QColor, QFont, QIcon, QImage, QPainter, QPixmap
-from PySide6.QtWidgets import QMenu, QSystemTrayIcon
+from PySide6.QtWidgets import QMenu, QSystemTrayIcon, QWidget
 
 from naga_control.config import parse_toml
 from naga_control.domain.errors import ConfigValidationError
 from naga_control.domain.profiles import ScrollMode
+from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.profile_mode_view import (
     DEVICE_MODE_HELP,
@@ -70,12 +71,13 @@ class TrayIcon(QObject):
         self,
         model: ServiceModel,
         *,
+        parent: QWidget | None = None,
         toggle_window: Callable[[], None],
         select_profile: Callable[[str], None],
         change_scroll: Callable[[ScrollMode | None, bool | None, bool | None], None],
         quit_app: Callable[[], None],
     ) -> None:
-        super().__init__()
+        super().__init__(parent)
         self.model = model
         self._toggle_window = toggle_window
         self._select_profile = select_profile
@@ -89,7 +91,7 @@ class TrayIcon(QObject):
             logger.warning("tray icon %s could not be loaded", tray_icon_path())
 
         self.icon = QSystemTrayIcon(self)
-        self.menu = QMenu()
+        self.menu = QMenu(parent)
         self.menu.setToolTipsVisible(True)
         self.show_action = self.menu.addAction("Show Naga Control")
         self.software_header_action = self.menu.addAction("Software controls")
@@ -153,7 +155,7 @@ class TrayIcon(QObject):
         self.menu.aboutToShow.connect(self._update_onboard)
         self.onboard_menu.aboutToShow.connect(self._update_onboard)
 
-        self.model.add_listener(self.model_changed.emit)
+        subscribe_model(self, self.model, self.model_changed.emit)
         self.model_changed.connect(self._update_from_model, Qt.ConnectionType.QueuedConnection)
         self._update_from_model()
         self.icon.show()

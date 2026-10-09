@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 from typing import NoReturn, cast
 
 import pytest
@@ -8,6 +9,7 @@ from test_session_ownership import ProxyFactory, TrackedActions, TrackedOutput, 
 from naga_control.application import service_factory
 from naga_control.domain.defaults import default_configuration
 from naga_control.domain.hardware import HardwareState
+from naga_control.domain.profiles import Configuration
 from naga_control.ports.hardware import NagaTopology
 from naga_control.service.hardware_worker import HardwareWorker
 from naga_control.service.runtime import NagaService
@@ -57,10 +59,14 @@ class FailingSession(Session):
 def make_service(worker: FailingWorker, session: FailingSession) -> NagaService:
     return NagaService(
         lambda: (connection(),),
-        default_configuration,
+        active_configuration,
         worker,
         lambda _connection, _configuration: session,
     )
+
+
+def active_configuration() -> Configuration:
+    return replace(default_configuration(), hardware_writes=True)
 
 
 @pytest.mark.parametrize("phase", ["rescan", "session"])

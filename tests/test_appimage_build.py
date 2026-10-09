@@ -68,12 +68,22 @@ def test_build_commands_use_selected_base_runtime_and_invoking_wheel_python(
         "-m",
         "pip",
         "install",
-        str(work / "naga_control-9.8.7-py3-none-any.whl"),
-        "dbus-python",
-        "numpy>=1.26,<3",
+        "--require-hashes",
+        "--requirement",
+        str(root / "packaging/hugin-runtime.lock"),
     ]
-    assert calls[5] == ["ldd", str(root / "base/bin/python3")]
-    assert calls[6] == [
+    assert calls[5] == [
+        str(work / "venv/bin/python"),
+        "-I",
+        "-m",
+        "pip",
+        "install",
+        "--no-deps",
+        str(work / "naga_control-9.8.7-py3-none-any.whl"),
+    ]
+    assert calls[6] == [str(work / "venv/bin/python"), "-I", "-m", "pip", "check"]
+    assert calls[7] == ["ldd", str(root / "base/bin/python3")]
+    assert calls[8] == [
         str(work / "appimagetool"),
         "--appimage-extract-and-run",
         str(work / "AppDir"),

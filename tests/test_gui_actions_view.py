@@ -20,7 +20,7 @@ from naga_control.gui.actions_view import (
 def test_kind_and_detail_round_trip_every_action_shape() -> None:
     actions = [
         DisabledAction(),
-        KeyAction(key="f13"),
+        KeyAction(key="f12"),
         KeyComboAction(modifiers=("left_ctrl", "left_shift"), key="t"),
         MouseButtonAction(button="back"),
         DeviceAction(action="dpi_stage_up"),

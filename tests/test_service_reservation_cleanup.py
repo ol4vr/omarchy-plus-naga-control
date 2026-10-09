@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Awaitable
+from dataclasses import replace
 from typing import Literal
 
 import pytest
@@ -174,7 +175,7 @@ async def test_concrete_service_internal_shield_does_not_abandon_cli_name_cleanu
     session.stop_gate = gate
     service = NagaService(
         lambda: (connection(),),
-        default_configuration,
+        lambda: replace(default_configuration(), hardware_writes=True),
         worker,
         lambda _connection, _configuration: session,
     )

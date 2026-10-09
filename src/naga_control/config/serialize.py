@@ -31,6 +31,7 @@ def to_toml_data(configuration: Configuration) -> dict[str, object]:
         "default_profile": configuration.default_profile,
         "active_profile": configuration.active_profile,
         "mode": configuration.mode,
+        "hardware_writes": configuration.hardware_writes,
         "profiles": {
             identifier: _profile_data(profile) for identifier, profile in configuration.profiles
         },
@@ -66,6 +67,7 @@ def _profile_data(profile: Profile) -> dict[str, object]:
             "low_battery_threshold": profile.power.low_battery_threshold,
         },
         "poll_rate": profile.poll_rate,
+        "lighting_writes": profile.lighting_writes,
     }
 
 

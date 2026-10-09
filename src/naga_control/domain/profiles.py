@@ -200,6 +200,7 @@ class Profile:
     lighting: LightingSettings
     power: PowerSettings
     poll_rate: int = 1000
+    lighting_writes: bool = False
 
     def __post_init__(self) -> None:
         if type(self.display_name) is not str or not self.display_name.strip():
@@ -208,6 +209,8 @@ class Profile:
             raise ConfigValidationError("plate_layout", "must be 2, 6, or 12")
         if self.poll_rate not in {125, 500, 1000}:
             raise ConfigValidationError("poll_rate", "must be 125, 500, or 1000")
+        if type(self.lighting_writes) is not bool:
+            raise ConfigValidationError("lighting_writes", "must be a boolean")
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,6 +221,7 @@ class Configuration:
     profiles: tuple[tuple[str, Profile], ...]
     schema_version: Literal[1] = 1
     mode: DeviceMode = "software"
+    hardware_writes: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "profiles", tuple(self.profiles))
@@ -225,6 +229,8 @@ class Configuration:
             raise ConfigValidationError("schema_version", "must be 1")
         if type(self.mode) is not str or self.mode not in {"software", "firmware"}:
             raise ConfigValidationError("mode", "must be software or firmware")
+        if type(self.hardware_writes) is not bool:
+            raise ConfigValidationError("hardware_writes", "must be a boolean")
         _validate_range(self.revision, "revision", 0, 2**63 - 1)
         if not self.profiles:
             raise ConfigValidationError("profiles", "must contain at least one profile")

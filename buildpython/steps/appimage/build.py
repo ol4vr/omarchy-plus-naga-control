@@ -75,8 +75,19 @@ def build_appimage() -> RunResult:
         python = str(venv / "bin/python")
         execute([python, "-I", "-m", "pip", "install", "--upgrade", "pip"])
         execute(
-            [python, "-I", "-m", "pip", "install", str(wheels[0]), "dbus-python", "numpy>=1.26,<3"]
+            [
+                python,
+                "-I",
+                "-m",
+                "pip",
+                "install",
+                "--require-hashes",
+                "--requirement",
+                str(root / "packaging/hugin-runtime.lock"),
+            ]
         )
+        execute([python, "-I", "-m", "pip", "install", "--no-deps", str(wheels[0])])
+        execute([python, "-I", "-m", "pip", "check"])
         library = linked_libpython(execute(["ldd", str(info.executable)]))
         copy_runtime(appdir=appdir, venv=venv, info=info, libpython=library)
         copy_assets(root=root, appdir=appdir)

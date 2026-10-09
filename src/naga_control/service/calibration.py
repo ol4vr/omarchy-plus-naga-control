@@ -8,6 +8,7 @@ from naga_control.domain.profiles import (
     Configuration,
     DpiSettings,
     DpiStage,
+    PowerSettings,
     ScrollSettings,
 )
 
@@ -33,6 +34,9 @@ def adopt_observed_settings(
         or state.scroll_mode is None
         or state.scroll_acceleration is None
         or state.scroll_smart_reel is None
+        or state.poll_rate is None
+        or state.idle_seconds is None
+        or state.low_battery_threshold is None
     ):
         return None
     dpi = DpiSettings(
@@ -44,8 +48,12 @@ def adopt_observed_settings(
         acceleration=state.scroll_acceleration,
         smart_reel=state.scroll_smart_reel,
     )
+    power = PowerSettings(state.idle_seconds, state.low_battery_threshold)
     profiles = tuple(
-        (identifier, replace(profile, dpi=dpi, scroll=scroll))
+        (
+            identifier,
+            replace(profile, dpi=dpi, scroll=scroll, power=power, poll_rate=state.poll_rate),
+        )
         if identifier == configuration.active_profile
         else (identifier, profile)
         for identifier, profile in configuration.profiles

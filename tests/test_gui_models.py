@@ -88,6 +88,18 @@ def test_model_notifies_snapshot_and_configuration_changes() -> None:
     assert notifications == ["changed", "changed"]
 
 
+def test_model_unsubscribe_is_idempotent_and_stops_notifications() -> None:
+    model = ServiceModel()
+    notifications: list[bool] = []
+    unsubscribe = model.add_listener(lambda: notifications.append(True))
+
+    unsubscribe()
+    unsubscribe()
+    model.mark_unreachable("not delivered")
+
+    assert notifications == []
+
+
 def test_model_suppresses_redundant_notifications() -> None:
     model = ServiceModel()
     notifications: list[bool] = []

@@ -3,6 +3,7 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFormLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.presenter import GuiPresenter
 from naga_control.gui.profile_mode_view import DEVICE_MODE_HELP, device_mode_view
@@ -20,7 +21,7 @@ class OverviewPage(QWidget):
         self.model = model
         self._run = run
 
-        self.model.add_listener(self.model_changed.emit)
+        subscribe_model(self, self.model, self.model_changed.emit)
         self.model_changed.connect(self._update_from_model, Qt.ConnectionType.QueuedConnection)
 
         self.connection_label = QLabel("connecting…")
