@@ -1,3 +1,4 @@
+import tomllib
 from collections.abc import Callable
 from dataclasses import FrozenInstanceError, replace
 from typing import cast
@@ -88,13 +89,22 @@ def test_root_mode_defaults_for_legacy_toml_without_changing_revision() -> None:
 
 def test_remapping_defaults_off_for_legacy_toml_and_round_trips() -> None:
     data = to_toml_data(default_configuration())
-    del data["remapping_enabled"]
 
     parsed = parse_toml(tomli_w.dumps(data))
 
     assert parsed.remapping_enabled is False
     enabled = replace(parsed, remapping_enabled=True)
     assert parse_toml(dump_toml(enabled)) == enabled
+
+
+def test_disabled_remapping_serialization_remains_compatible_with_legacy_gui() -> None:
+    disabled = default_configuration()
+
+    document = dump_toml(disabled)
+
+    assert "remapping_enabled" not in tomllib.loads(document)
+    assert parse_toml(document).remapping_enabled is False
+    assert to_toml_data(replace(disabled, remapping_enabled=True))["remapping_enabled"] is True
 
 
 def test_remapping_rejects_firmware_mode_and_dpi_stage_bindings() -> None:

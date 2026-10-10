@@ -25,18 +25,20 @@ def dump_toml(configuration: Configuration) -> str:
 
 def to_toml_data(configuration: Configuration) -> dict[str, object]:
     """Convert a configuration to values accepted by ``tomli_w``."""
-    return {
+    data: dict[str, object] = {
         "schema_version": configuration.schema_version,
         "revision": configuration.revision,
         "default_profile": configuration.default_profile,
         "active_profile": configuration.active_profile,
         "mode": configuration.mode,
         "hardware_writes": configuration.hardware_writes,
-        "remapping_enabled": configuration.remapping_enabled,
         "profiles": {
             identifier: _profile_data(profile) for identifier, profile in configuration.profiles
         },
     }
+    if configuration.remapping_enabled:
+        data["remapping_enabled"] = True
+    return data
 
 
 def _profile_data(profile: Profile) -> dict[str, object]:
