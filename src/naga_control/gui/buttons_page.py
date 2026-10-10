@@ -20,7 +20,6 @@ from naga_control.domain.profiles import Configuration, LogicalControlId
 from naga_control.gui.actions_view import (
     action_for_control,
     action_kind,
-    controls_for_layout,
     format_action_detail,
     parse_action,
 )
@@ -158,7 +157,6 @@ class ButtonsPage(QWidget):
     def _load(self, configuration: Configuration) -> None:
         self._loading = True
         profile = configuration.profile(configuration.active_profile)
-        visible_controls = frozenset(controls_for_layout(profile.plate_layout))
         self.profile_id = configuration.active_profile
         self._loaded_actions = {}
         # Remove entire rows, including labels, before rebuilding on a new revision.
@@ -182,8 +180,6 @@ class ButtonsPage(QWidget):
         self.rows_layout.addWidget(headings)
         for zone in sorted(all_zones(), key=_zone_order):
             control = zone.control_id
-            if control is not None and control not in visible_controls:
-                continue
             if control is None:
                 root = QWidget()
                 layout = QHBoxLayout(root)

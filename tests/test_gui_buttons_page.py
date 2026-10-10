@@ -54,7 +54,7 @@ def test_page_lists_side_buttons_in_numeric_order_with_illustration_numbers(
     page, _client = _page(qapp)
 
     controls = [row.control_id for row in page.rows]
-    assert len(controls) == 7 + 12
+    assert len(controls) == 7 + 12 + 6 + 2
     assert controls[:7] == [
         "dpi_up",
         "dpi_down",
@@ -64,15 +64,17 @@ def test_page_lists_side_buttons_in_numeric_order_with_illustration_numbers(
         "top_rear",
         "ring_finger",
     ]
-    assert controls[7:] == [f"side_12_{number}" for number in range(1, 13)]
-    assert [int(row.number_label.text()) for row in page.rows] == [3, 4, *range(6, 23)]
+    assert controls[7:19] == [f"side_12_{number}" for number in range(1, 13)]
+    assert controls[19:25] == [f"side_6_{number}" for number in range(1, 7)]
+    assert controls[25:] == ["side_2_front", "side_2_rear"]
+    assert [int(row.number_label.text()) for row in page.rows] == [3, 4, *range(6, 31)]
     from naga_control.gui.mapping_zones import zone_for_control
 
     for row in page.rows:
         zone = zone_for_control(row.control_id)
         assert zone is not None
         assert int(row.number_label.text()) == zone.number
-    assert page.rows_layout.count() == 23
+    assert page.rows_layout.count() == 31
     assert _row(page, "top_front").kind_box.currentText() == "passthrough"
     assert not _row(page, "top_front").detail_edit.isEnabled()
     assert not page.apply_button.isEnabled()
@@ -259,8 +261,8 @@ def test_repeated_applies_do_not_leave_orphan_labels(qapp: QApplication) -> None
         row.detail_edit.setCurrentText(button)
         page.apply_button.click()
         qapp.processEvents()
-        assert page.rows_layout.count() == 23
-        assert len(page.rows) == 19
+        assert page.rows_layout.count() == 31
+        assert len(page.rows) == 27
         assert not page.apply_button.isEnabled()
     assert len(client.applied) == 3
 
@@ -286,10 +288,11 @@ def test_mapping_map_shows_current_bindings(qapp: QApplication) -> None:
     assert dpi_up.toolTip().startswith("DPI up — ")
 
 
-def test_selected_six_button_plate_retries_stale_apply_and_preserves_other_plate(
+def test_button_23_targets_only_six_button_binding_across_stale_retry_and_restart(
     qapp: QApplication,
 ) -> None:
     from naga_control.gui.actions_view import action_for_control
+    from naga_control.gui.mapping_zones import zone_for_control
 
     configuration = default_configuration()
     profile = configuration.profile(configuration.active_profile)
@@ -310,18 +313,25 @@ def test_selected_six_button_plate_retries_stale_apply_and_preserves_other_plate
         )
     )
     page, client = _page(qapp, document)
-    controls = {row.control_id for row in page.rows}
-    assert "side_6_1" in controls
-    assert "side_12_1" not in controls
-    assert "side_2_front" not in controls
+    button_11 = _row(page, "side_12_1")
+    button_23 = _row(page, "side_6_1")
+    button_29 = _row(page, "side_2_front")
+    assert button_11.number_label.text() == "11"
+    assert button_23.number_label.text() == "23"
+    assert button_29.number_label.text() == "29"
+    zone_23 = zone_for_control("side_6_1")
+    assert zone_23 is not None
+    page.mapping_map.zone_clicked(zone_23)
+    qapp.processEvents()
+    assert "rgba(68, 255, 136" in button_23.root.styleSheet()
+    assert button_11.root.styleSheet() == ""
 
     client.document = set_bindings(
         client.document,
         configuration.active_profile,
         {"side_6_1": KeyAction("9")},
     )
-    row = _row(page, "side_6_1")
-    row.detail_edit.setCurrentText("8")
+    button_23.detail_edit.setCurrentText("8")
     page.apply_button.click()
     qapp.processEvents()
 
@@ -335,5 +345,12 @@ def test_selected_six_button_plate_retries_stale_apply_and_preserves_other_plate
     assert profile.plate_layout == 6
     assert action_for_control(profile.bindings, "side_6_1") == KeyAction("8")
     assert action_for_control(profile.bindings, "side_12_1") == KeyAction("9")
-    assert row.detail_edit.currentText() == "8"
+    assert button_23.detail_edit.currentText() == "8"
+    assert button_11.detail_edit.currentText() == "9"
     assert page.status_label.text() == "applied"
+
+    reopened, _reopened_client = _page(qapp, client.document)
+    assert _row(reopened, "side_6_1").number_label.text() == "23"
+    assert _row(reopened, "side_6_1").detail_edit.currentText() == "8"
+    assert _row(reopened, "side_12_1").number_label.text() == "11"
+    assert _row(reopened, "side_12_1").detail_edit.currentText() == "9"
