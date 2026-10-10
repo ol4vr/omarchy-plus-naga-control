@@ -77,20 +77,36 @@ not solve the physical Naga driver's F13 report when Naga Control is inactive,
 failed, discovery-only, or deliberately fail-open. Therefore global compositor
 F13 PTT is not safe for a live pilot.
 
-The required source-scoped design is:
+The uninstalled NAGA-CONTROL-2 central integration candidate implements the
+source-scoped design as follows:
 
 1. keyd keeps `CapsLock = F13` for normal physical keyboards;
 2. keyd excludes exactly `1532:00e7`, `1532:00e8`, and Naga Control's verified
    virtual keyboard identity `4e43:0001`;
-3. the Discord PTT bridge accepts F13 only from keyd's virtual keyboard source,
-   not from a global Hyprland keycode binding or any Naga source;
+3. Hyprland binds the `F13` keysym only for the inclusive
+   `keyd-virtual-keyboard` device and dispatches press/release through the
+   Omarchy+ source-aware PTT controller, not through a global keycode binding;
 4. service failure releases grabs so pointer/buttons pass through, while the
-   source-filtered PTT bridge continues rejecting physical Naga F13.
+   compositor source filter continues rejecting physical Naga F13; and
+5. an on-demand, non-enabled user guard validates keyd's complete sysfs
+   identity and Hyprland device identity, snapshots eligible physical Caps Lock
+   interfaces, serializes press/release, and forces PTT release if a verified
+   source disappears or the physical keyboard inventory changes during a hold.
+
+keyd intentionally merges all normal wildcard-managed keyboards into one
+virtual source, so the compositor cannot recover which normal keyboard emitted
+the Caps Lock event. All such normal keyboards are authorized by this contract;
+the two Naga products and Naga Control virtual keyboard are excluded before the
+merge. Any physical keyboard disappearance during a hold causes a conservative
+release. Logitech remains under the existing wildcard policy and is neither
+specially selected nor excluded.
 
 No identities may be added from guesses. The two physical IDs and virtual ID
 must be re-observed during the separately approved pilot. Until the owned
-Discord PTT path has source filtering and fail-open tests, live pilot readiness
-is blocked even though the application build itself is reviewable.
+Discord PTT path is accepted, reconciled, and passes live source, press/release,
+disconnect, fail-open, multiple-keyboard, and Logitech regression checks, live
+pilot readiness remains blocked even though its isolated fixtures cover those
+paths and the application build itself is reviewable.
 
 ## Permissions and known packaging limits
 
