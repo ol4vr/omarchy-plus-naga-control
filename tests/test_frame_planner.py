@@ -9,17 +9,17 @@ from naga_control.adapters.evdev.frames import (
     RawInputEvent,
 )
 from naga_control.domain.defaults import default_configuration
-from naga_control.domain.intents import DeviceActionIntent, KeyOutputIntent
+from naga_control.domain.intents import KeyOutputIntent
 from naga_control.domain.profiles import as_logical_control
 from naga_control.service.action_dispatcher import ActionDispatcher
 from naga_control.service.frame_planner import FramePlanner
 
 
-def test_f13_suppresses_its_scan_and_key_but_forwards_frame_boundary() -> None:
+def test_default_disabled_dpi_up_suppresses_f13_and_forwards_frame_boundary() -> None:
     plan = _planner().plan(_frame("dpi_up", 1, 183))
 
     assert plan.forwarded_events == (_event(EV_SYN, SYN_REPORT, 0),)
-    assert plan.device_intents == (DeviceActionIntent("dpi_stage_up"),)
+    assert plan.device_intents == ()
 
 
 def test_f17_down_and_up_emit_left_alt_and_suppress_only_handled_events() -> None:

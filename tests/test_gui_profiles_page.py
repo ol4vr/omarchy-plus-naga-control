@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QApplication
 from naga_control.config import dump_toml, parse_toml
 from naga_control.domain.defaults import default_configuration
 from naga_control.gui.editors import duplicate_profile, remove_profile, set_plate_layout
+from naga_control.gui.models import ServiceSnapshotView
 from naga_control.gui.profiles_page import ProfilesPage
 from naga_control.ipc.client import InvalidConfigurationError, StaleRevisionError
 
@@ -49,6 +50,35 @@ def test_dropdown_shows_profiles_with_active_indicator(qapp: QApplication) -> No
     assert [page.profiles_box.itemData(i) for i in range(page.profiles_box.count())] == [
         identifier for identifier, _ in configuration.profiles
     ]
+
+
+def test_remapping_toggle_does_not_enable_hardware_writes(qapp: QApplication) -> None:
+    page, client = _page(qapp)
+    page.model.apply_snapshot(
+        ServiceSnapshotView(
+            "available",
+            1,
+            "hyperspeed",
+            None,
+            desired_mode="software",
+            observed_mode="software",
+            mode_ready=True,
+        )
+    )
+    qapp.processEvents()
+
+    assert page.remapping_button.isEnabled()
+    page.remapping_button.click()
+    qapp.processEvents()
+
+    enabled = parse_toml(client.document)
+    assert enabled.remapping_enabled is True
+    assert enabled.hardware_writes is False
+    assert page.remapping_button.text() == "Disable remapping"
+
+    page.remapping_button.click()
+    qapp.processEvents()
+    assert parse_toml(client.document).remapping_enabled is False
 
 
 def test_same_name_selection_edits_without_activating(

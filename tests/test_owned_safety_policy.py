@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 from service_runtime_fakes import Session, Worker, available, connection
@@ -43,6 +44,7 @@ async def test_default_start_is_read_only_and_does_not_grab_or_correct_mode() ->
     assert sessions == []
     assert service.snapshot()["status"] == "available"
     assert service.snapshot()["hardware_writes_enabled"] is False
+    assert service.snapshot()["remapping_enabled"] is False
     assert service.snapshot()["remapping_active"] is False
     await service.stop()
 
@@ -129,7 +131,30 @@ def test_configuration_round_trip_keeps_both_write_gates_default_off() -> None:
     configuration = parse_toml(dump_toml(default_configuration()))
 
     assert configuration.hardware_writes is False
+    assert configuration.remapping_enabled is False
     assert configuration.profile("default").lighting_writes is False
+
+
+async def test_remapping_only_starts_input_without_hardware_setting_writes() -> None:
+    worker = Worker()
+    sessions: list[Session] = []
+    configuration = replace(default_configuration(), remapping_enabled=True)
+
+    def factory(_connection: NagaConnection, _configuration: Configuration) -> Session:
+        session = Session()
+        sessions.append(session)
+        return session
+
+    service = NagaService(lambda: (connection(),), lambda: configuration, worker, factory)
+
+    await service.start()
+
+    assert worker.events == ["start", "rescan:1", "read_mode"]
+    assert [session.events for session in sessions] == [["start"]]
+    assert service.snapshot()["hardware_writes_enabled"] is False
+    assert service.snapshot()["remapping_enabled"] is True
+    assert service.snapshot()["remapping_active"] is True
+    await service.stop()
 
 
 def test_power_reads_are_captured_for_the_activation_gate() -> None:
@@ -158,6 +183,19 @@ def test_lighting_is_not_written_without_the_independent_opt_in() -> None:
 def test_f13_is_reserved_from_naga_generated_output(action: Callable[[], object]) -> None:
     with pytest.raises(ConfigValidationError, match="physical-keyboard PTT isolation"):
         action()
+
+
+def test_udev_rule_grants_only_naga_inputs_and_uinput() -> None:
+    rule = (
+        Path(__file__).parents[1] / "system/udev/70-naga-control.rules"
+    ).read_text(encoding="utf-8")
+
+    assert rule.count('TAG+="uaccess"') == 3
+    assert 'ATTRS{idProduct}=="00e7"' in rule
+    assert 'ATTRS{idProduct}=="00e8"' in rule
+    assert 'KERNEL=="uinput"' in rule
+    assert 'ATTRS{name}' not in rule
+    assert "046d" not in rule.lower()
 
 
 def _session(_connection: NagaConnection, _configuration: Configuration) -> Session:

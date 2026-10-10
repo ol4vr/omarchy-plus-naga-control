@@ -119,8 +119,12 @@ def _remapping_status(snapshot: ServiceSnapshotView | None, online: bool) -> str
         return "Not ready (requested/observed differ)"
     if not snapshot.mode_ready:
         return "Not ready"
+    if snapshot.observed_mode == "firmware":
+        return "Off (onboard mode verified)"
+    if not snapshot.remapping_enabled:
+        return "Off (disabled)"
     return (
         "Active (software mode verified)"
-        if snapshot.observed_mode == "software"
-        else "Off (onboard mode verified)"
+        if snapshot.remapping_active
+        else "Enabled; waiting for input access"
     )

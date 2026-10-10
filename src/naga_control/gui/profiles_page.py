@@ -20,6 +20,7 @@ from naga_control.gui.editors import (
     remove_profile,
     rename_profile,
     set_plate_layout,
+    set_remapping_enabled,
 )
 from naga_control.gui.model_subscription import subscribe_model
 from naga_control.gui.models import ServiceModel
@@ -75,6 +76,11 @@ class ProfilesPage(QWidget):
         )
         self.help_label = QLabel("Choose a profile to edit; editors follow the active profile.")
         self.help_label.setWordWrap(True)
+        self.remapping_button = QPushButton("Enable remapping")
+        self.remapping_button.setToolTip(
+            "Start or stop Naga-only input capture. This does not enable DPI, polling, "
+            "power, or lighting writes."
+        )
         self.draft_label = QLabel("")
         self.draft_label.setWordWrap(True)
         self.status_label = QLabel("")
@@ -107,6 +113,7 @@ class ProfilesPage(QWidget):
         column.addWidget(self.active_label)
         column.addLayout(selector_row)
         column.addWidget(self.help_label)
+        column.addWidget(self.remapping_button)
         column.addLayout(buttons)
         column.addLayout(plate_form)
         column.addWidget(self.draft_label)
@@ -116,6 +123,7 @@ class ProfilesPage(QWidget):
         self.profiles_box.currentIndexChanged.connect(self._selection_changed)
         self.plate_box.currentIndexChanged.connect(self._plate_changed)
         self.activate_button.clicked.connect(self._request_activate)
+        self.remapping_button.clicked.connect(self._toggle_remapping)
         self.new_button.clicked.connect(self._new_from_selected)
         self.rename_button.clicked.connect(self._rename_selected)
         self.delete_button.clicked.connect(self._delete_selected)
@@ -192,6 +200,8 @@ class ProfilesPage(QWidget):
             self.active_label.setText(f"Active: {software_profile_label(name, active)}")
         else:
             self.active_label.setText("Active: unknown")
+        enabled = self._configuration is not None and self._configuration.remapping_enabled
+        self.remapping_button.setText("Disable remapping" if enabled else "Enable remapping")
 
     def _selection_changed(self, _index: int) -> None:
         if self._updating:
@@ -260,6 +270,12 @@ class ProfilesPage(QWidget):
         plate_ok = bool(editable) and self.plate_box.currentData() in (12, 6, 2)
         self.plate_box.setEnabled(plate_ok)
         self.apply_plate_button.setEnabled(plate_ok)
+        remapping_enabled = bool(
+            self._configuration is not None and self._configuration.remapping_enabled
+        )
+        self.remapping_button.setEnabled(
+            bool(editable) and (remapping_enabled or is_software_verified(self.model))
+        )
         can_activate, tip = activation_gate(self.model, bool(editable), selected, self._active_id())
         self.activate_button.setEnabled(can_activate)
         self.activate_button.setToolTip(tip)
@@ -285,6 +301,23 @@ class ProfilesPage(QWidget):
             self._update_enabled()
             return
         self.activate_requested.emit(selected)
+
+    def _toggle_remapping(self) -> None:
+        configuration = self._configuration
+        document = self._document_or_complain()
+        if configuration is None or document is None or not self.model.connection.reachable:
+            return
+        if not configuration.remapping_enabled and not is_software_verified(self.model):
+            self._update_enabled()
+            return
+        if not self.confirm_profile_change():
+            return
+        try:
+            updated = set_remapping_enabled(document, not configuration.remapping_enabled)
+        except ConfigValidationError as exc:
+            self.model.set_apply_status(f"rejected: {exc.message}")
+            return
+        self.apply_document(updated)
 
     def _apply_plate(self) -> None:
         selected = self._selected_id()

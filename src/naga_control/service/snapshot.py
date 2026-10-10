@@ -18,7 +18,7 @@ def snapshot_document(
         and state.status == "available"
         and configuration is not None
         and observed_mode == configuration.mode
-        and (not configuration.hardware_writes or observed_mode == "firmware" or has_session)
+        and (not configuration.remapping_enabled or observed_mode == "firmware" or has_session)
     )
     status = state.status if state is not None else "absent"
     if (
@@ -41,6 +41,9 @@ def snapshot_document(
         "mode_error": mode_error,
         "hardware_writes_enabled": (
             configuration.hardware_writes if configuration is not None else False
+        ),
+        "remapping_enabled": (
+            configuration.remapping_enabled if configuration is not None else False
         ),
         "remapping_active": has_session,
         "lighting_writes_enabled": (

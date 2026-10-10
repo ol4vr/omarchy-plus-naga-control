@@ -239,8 +239,9 @@ After prerequisites are activated, inspect this read-only application snapshot
 busctl --user call org.nagacontrol.Service1 /org/nagacontrol/Service1 org.nagacontrol.Service1 GetSnapshot
 ```
 
-Require `status` = `available` and perform physical F13/F14 DPI-stage and F17
-held-ALT down/up checks. These are not automatically established by installation.
+Require `status` = `available`. Software remapping is a separate opt-in;
+fresh profiles leave both former DPI buttons disabled and never intentionally
+generate F13. Hardware-setting writes remain independently disabled.
 
 ## Status
 
@@ -249,7 +250,7 @@ profile configuration, OpenRazer control, physical USB-parent discovery,
 ordered frame parsing, proxy-before-grab activation, forwarding clones,
 replacement outputs, session D-Bus, and the native Qt configuration UI. The
 12-button first slice has passed on both wired and HyperSpeed hardware for
-F13/F14 DPI stage changes and held F17-to-LEFTALT output. All 19 12-button
+independent former-DPI-button handling and held F17-to-LEFTALT output. All 19 12-button
 controls are captured and remapped on both transports - including verified
 top buttons (`KPSLASH`/`F18`), scan-less wheel tilt, and the full thumb grid -
 plus the 6- and 2-button plates on HyperSpeed. Motion, clicks, and

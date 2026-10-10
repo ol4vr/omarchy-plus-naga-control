@@ -23,12 +23,23 @@ from naga_control.gui.editors import (
     set_dpi_stages,
     set_lighting,
     set_power,
+    set_remapping_enabled,
     set_scroll,
 )
 
 
 def _document() -> str:
     return dump_toml(default_configuration())
+
+
+def test_set_remapping_enabled_is_independent_from_hardware_writes() -> None:
+    before = parse_toml(_document())
+
+    after = parse_toml(set_remapping_enabled(_document(), True))
+
+    assert after.remapping_enabled is True
+    assert after.hardware_writes is False
+    assert after.revision == before.revision + 1
 
 
 def test_set_dpi_stages_replaces_stages_and_bumps_revision() -> None:

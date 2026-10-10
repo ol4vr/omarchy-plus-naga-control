@@ -32,6 +32,7 @@ def to_toml_data(configuration: Configuration) -> dict[str, object]:
         "active_profile": configuration.active_profile,
         "mode": configuration.mode,
         "hardware_writes": configuration.hardware_writes,
+        "remapping_enabled": configuration.remapping_enabled,
         "profiles": {
             identifier: _profile_data(profile) for identifier, profile in configuration.profiles
         },

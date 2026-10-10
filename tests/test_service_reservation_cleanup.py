@@ -175,7 +175,9 @@ async def test_concrete_service_internal_shield_does_not_abandon_cli_name_cleanu
     session.stop_gate = gate
     service = NagaService(
         lambda: (connection(),),
-        lambda: replace(default_configuration(), hardware_writes=True),
+        lambda: replace(
+            default_configuration(), hardware_writes=True, remapping_enabled=True
+        ),
         worker,
         lambda _connection, _configuration: session,
     )

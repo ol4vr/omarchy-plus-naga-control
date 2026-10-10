@@ -40,9 +40,10 @@ ROOT_FIELDS = frozenset(
         "profiles",
         "mode",
         "hardware_writes",
+        "remapping_enabled",
     }
 )
-ROOT_OPTIONAL_FIELDS = frozenset({"mode", "hardware_writes"})
+ROOT_OPTIONAL_FIELDS = frozenset({"mode", "hardware_writes", "remapping_enabled"})
 PROFILE_FIELDS = frozenset(
     {
         "display_name",
@@ -81,6 +82,7 @@ def parse_toml(document: str) -> Configuration:
         for identifier, value in profile_table.items()
     )
     hardware_writes = _boolean(root.get("hardware_writes", False), "hardware_writes")
+    remapping_enabled = _boolean(root.get("remapping_enabled", False), "remapping_enabled")
     return Configuration(
         revision,
         default_profile,
@@ -88,6 +90,7 @@ def parse_toml(document: str) -> Configuration:
         profiles,
         mode=cast(DeviceMode, mode),
         hardware_writes=hardware_writes,
+        remapping_enabled=remapping_enabled,
     )
 
 

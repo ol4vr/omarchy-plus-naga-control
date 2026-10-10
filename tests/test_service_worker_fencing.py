@@ -57,7 +57,7 @@ async def test_failed_session_cleanup_keeps_actual_worker_fenced_until_shutdown(
         sessions.append(session)
         return session
 
-    configuration = replace(default_configuration(), hardware_writes=True)
+    configuration = replace(default_configuration(), hardware_writes=True, remapping_enabled=True)
     service = NagaService(lambda: (connection(),), lambda: configuration, worker, factory)
     pending: asyncio.Task[HardwareState] | None = None
     try:

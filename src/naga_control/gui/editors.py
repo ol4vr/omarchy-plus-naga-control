@@ -30,6 +30,13 @@ def edit_configuration(document: str, transform: Callable[[Configuration], Confi
     return dump_toml(replace(updated, revision=configuration.revision + 1))
 
 
+def set_remapping_enabled(document: str, enabled: bool) -> str:
+    """Set the software input-grab opt-in without enabling hardware setting writes."""
+    return edit_configuration(
+        document, lambda configuration: replace(configuration, remapping_enabled=enabled)
+    )
+
+
 def edit_profile(document: str, profile_id: str, transform: Callable[[Profile], Profile]) -> str:
     """Return a new document with one profile replaced and revision bumped."""
 

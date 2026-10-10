@@ -29,6 +29,14 @@ device mode, apply profiles, open/grab event nodes, create remapping sessions,
 or repair mode drift. D-Bus snapshots distinguish device reads, the cached
 poll-rate observation, and unavailable lighting readback.
 
+`remapping_enabled = true` is a separate, explicit software-input opt-in. It
+may open and grab only the discovered Naga `1532:00e7` or `1532:00e8` event
+nodes and create uinput replacement devices when the mouse is already verified
+in software mode. It does not enable `hardware_writes`, apply the saved DPI,
+polling, scroll, power, or lighting settings, or correct device-mode drift.
+Fresh configurations disable both former DPI buttons. Enabling remapping is
+rejected if either still has a `dpi_stage_up` or `dpi_stage_down` action.
+
 `hardware_writes = true` is a separately reviewed configuration transition.
 The first transition is permitted only when one current snapshot contains all
 DPI stages and active stage, scroll mode/options/toggles, a separately verified
@@ -110,12 +118,13 @@ paths and the application build itself is reviewable.
 
 ## Permissions and known packaging limits
 
-The proposed udev rules are device-scoped `uaccess` for the two Naga product
-IDs, session-wide `uaccess` for `/dev/uinput`, and read access for deterministic
-`Naga Control *` virtual nodes. They require a privileged, separate approval.
-No group membership is proposed. The user service is unprivileged and is not
-enabled persistently. D-Bus activation is installed only during explicit
-activation, never staging.
+The proposed udev rules are device-scoped `uaccess` for only the two Naga
+product IDs (`1532:00e7` wired and `1532:00e8` HyperSpeed), session-wide
+`uaccess` for `/dev/uinput`, and no virtual-event-node grant. They require a
+privileged, separate approval. No Logitech ID, input-group membership, or broad
+input rule is included. Reloading the rules does not grant an existing Naga
+node retroactively; reconnect the selected Naga transport after reload. The
+user service remains unprivileged and is not enabled persistently.
 
 The selected artifact is an extracted AppDir tar.xz. It does not need FUSE2.
 The runtime lock is Hugin x86_64-specific; this is not a bit-for-bit build or an
@@ -126,15 +135,17 @@ exact tested artifact.
 
 ## Pilot recovery sequence
 
-Keep the Logitech mouse connected. Before activation, record service inactivity,
-input-node identities, keyd mapping, OpenRGB's seven controllers, and OpenRazer
-read-only state. Activate in discovery-only mode and verify there are no grabs,
-virtual devices, hardware-setting writes, or RGB changes. Do not set
-`hardware_writes = true` until the complete-state and exact-match gates,
-independent poll-rate verification, and source-scoped PTT prerequisite all pass.
+Keep the Logitech mouse connected. Before activation, record input-node
+identities, keyd mapping, OpenRGB's seven controllers, and OpenRazer read-only
+state. Start in discovery-only mode and verify there are no grabs, virtual
+devices, hardware-setting writes, or RGB changes. Install the exact scoped udev
+rule only under separate approval, reconnect the Naga, set both former DPI
+buttons to Disabled in the GUI, and then use **Enable remapping**. Leave
+`hardware_writes = false` and `lighting_writes = false` throughout this pilot.
 
 On any pointer loss, conflicting grab, unexpected F13 PTT, RGB change, or daemon
-conflict: stop only `naga-control.service`, confirm the Logitech fallback,
-confirm physical Naga fail-open behavior, leave OpenRazer/OpenRGB/keyd untouched,
-then remove manifested user integration. Do not restart OpenRGB or write raw
-HID reports during recovery.
+conflict: use the Logitech recovery pointer, run `systemctl --user stop
+naga-control.service`, and set `remapping_enabled = false` in
+`~/.config/naga-control/config.toml` before starting discovery again. Confirm
+physical Naga fail-open behavior and leave OpenRazer/OpenRGB/keyd untouched. Do
+not restart OpenRGB or write raw HID reports during recovery.

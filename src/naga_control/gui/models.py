@@ -36,6 +36,8 @@ class ServiceSnapshotView:
     observed_mode: str | None = None
     mode_ready: bool = False
     mode_error: str | None = None
+    remapping_enabled: bool = False
+    remapping_active: bool = False
 
 
 def parse_snapshot(document: str) -> ServiceSnapshotView:
@@ -64,6 +66,8 @@ def parse_snapshot(document: str) -> ServiceSnapshotView:
         observed_mode=_optional_str(payload.get("observed_mode")),
         mode_ready=payload.get("mode_ready") is True,
         mode_error=_optional_str(payload.get("mode_error")),
+        remapping_enabled=payload.get("remapping_enabled") is True,
+        remapping_active=payload.get("remapping_active") is True,
     )
 
 

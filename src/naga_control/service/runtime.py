@@ -97,9 +97,24 @@ class NagaService:
                     mode = await self._worker.read_device_mode()
                     self._observed_mode = mode
                     if not self._config.require_current().hardware_writes:
-                        self._mode_error = None
+                        configuration = self._config.require_current()
+                        self._mode_error = (
+                            None
+                            if mode == configuration.mode
+                            else f"device mode drifted to {mode}; hardware writes are disabled"
+                        )
                         self._state = await self._worker.refresh_state()
-                        await self._sessions.stop()
+                        if (
+                            self._state.status != "available"
+                            or not configuration.remapping_enabled
+                            or configuration.mode != "software"
+                            or mode != "software"
+                        ):
+                            await self._sessions.stop()
+                        elif self._sessions.current is None:
+                            connections = self._discover()
+                            if len(connections) == 1 and connections[0].nodes:
+                                await self._apply_topology(connections)
                         continue
                     if mode != self._config.require_current().mode:
                         self._mode_error = f"device mode drifted to {mode}"
@@ -126,6 +141,7 @@ class NagaService:
                         await self._sessions.stop()
                     elif (
                         self._sessions.current is None
+                        and self._config.require_current().remapping_enabled
                         and mode == "software"
                         and not self._mode_write_failed
                     ):
@@ -157,14 +173,21 @@ class NagaService:
         await self._require_mutable()
         await self._sessions.stop()
         state = await self._rescan(connections)
+        configuration = self._config.require_current()
         if (
-            self._config.require_current().hardware_writes
+            configuration.hardware_writes
+            and configuration.mode == "software"
             and self._mode_ready()
-            and self._config.require_current().mode == "software"
         ):
             await self._apply_profile_settings()
-            if self._mode_ready() and len(connections) == 1 and connections[0].nodes:
-                await self._start_session(connections[0])
+        if (
+            configuration.remapping_enabled
+            and configuration.mode == "software"
+            and self._mode_ready()
+            and len(connections) == 1
+            and connections[0].nodes
+        ):
+            await self._start_session(connections[0])
         return state
 
     async def _start_session(self, connection: NagaConnection) -> None:
@@ -222,16 +245,17 @@ class NagaService:
             await self._require_mutable()
             await self._sessions.stop()
             state = await self._rescan(connections)
+            configuration = self._config.require_current()
             if (
-                self._config.require_current().hardware_writes
-                and self._mode_ready()
-                and self._config.require_current().mode == "software"
+                self._mode_ready()
+                and configuration.mode == "software"
                 and self._sessions.current is None
             ):
                 physical = self._discover()
                 if len(physical) == 1 and physical[0].nodes:
-                    await self._apply_profile_settings()
-                    if self._mode_ready():
+                    if configuration.hardware_writes:
+                        await self._apply_profile_settings()
+                    if configuration.remapping_enabled and self._mode_ready():
                         await self._start_session(physical[0])
             return state
 

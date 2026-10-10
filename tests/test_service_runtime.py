@@ -16,7 +16,7 @@ from naga_control.service.runtime import (
 
 
 def active_configuration() -> Configuration:
-    return replace(default_configuration(), hardware_writes=True)
+    return replace(default_configuration(), hardware_writes=True, remapping_enabled=True)
 
 
 async def test_service_starts_one_connection_and_releases_before_shutdown() -> None:
@@ -135,6 +135,7 @@ async def test_device_action_state_updates_the_service_snapshot() -> None:
         "mode_ready": False,
         "mode_error": "device action lost hardware access",
         "hardware_writes_enabled": True,
+        "remapping_enabled": True,
         "remapping_active": True,
         "lighting_writes_enabled": False,
         "observation_sources": {

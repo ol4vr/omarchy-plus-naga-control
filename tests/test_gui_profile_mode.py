@@ -20,6 +20,8 @@ def _snapshot(**changes: object) -> ServiceSnapshotView:
             desired_mode="software",
             observed_mode="software",
             mode_ready=True,
+            remapping_enabled=True,
+            remapping_active=True,
         ),
         **changes,
     )
@@ -141,6 +143,15 @@ def test_requested_observed_and_remapping_are_separate(
         remapping,
         error,
     )
+
+
+def test_verified_software_mode_does_not_claim_disabled_remapping_is_active() -> None:
+    model = ServiceModel()
+    model.apply_snapshot(
+        _snapshot(remapping_enabled=False, remapping_active=False)
+    )
+
+    assert device_mode_view(model).remapping == "Off (disabled)"
 
 
 @pytest.mark.parametrize("mode", ["software", "firmware"])

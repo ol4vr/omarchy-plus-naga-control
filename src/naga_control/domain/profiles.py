@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Literal, cast
 
-from naga_control.domain.actions import Action
+from naga_control.domain.actions import Action, DeviceAction
 from naga_control.domain.errors import ConfigValidationError
 from naga_control.domain.hardware import DeviceMode
 
@@ -222,6 +222,7 @@ class Configuration:
     schema_version: Literal[1] = 1
     mode: DeviceMode = "software"
     hardware_writes: bool = False
+    remapping_enabled: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "profiles", tuple(self.profiles))
@@ -231,6 +232,12 @@ class Configuration:
             raise ConfigValidationError("mode", "must be software or firmware")
         if type(self.hardware_writes) is not bool:
             raise ConfigValidationError("hardware_writes", "must be a boolean")
+        if type(self.remapping_enabled) is not bool:
+            raise ConfigValidationError("remapping_enabled", "must be a boolean")
+        if self.remapping_enabled and self.mode != "software":
+            raise ConfigValidationError(
+                "remapping_enabled", "requires software device mode"
+            )
         _validate_range(self.revision, "revision", 0, 2**63 - 1)
         if not self.profiles:
             raise ConfigValidationError("profiles", "must contain at least one profile")
@@ -238,6 +245,18 @@ class Configuration:
         for identifier in identifiers:
             if type(identifier) is not str or not PROFILE_ID_RE.fullmatch(identifier):
                 raise ConfigValidationError("profiles", "profile IDs must be lowercase ASCII slugs")
+        if self.remapping_enabled:
+            for identifier, profile in self.profiles:
+                for control_id in ("dpi_up", "dpi_down"):
+                    action = profile.bindings.action_for(cast(LogicalControlId, control_id), 12)
+                    if isinstance(action, DeviceAction) and action.action in {
+                        "dpi_stage_up",
+                        "dpi_stage_down",
+                    }:
+                        raise ConfigValidationError(
+                            f"profiles.{identifier}.bindings.common.{control_id}",
+                            "must not adjust DPI while software remapping is enabled",
+                        )
         if len(set(identifiers)) != len(identifiers):
             raise ConfigValidationError("profiles", "profile IDs must be unique")
         if self.default_profile not in identifiers:

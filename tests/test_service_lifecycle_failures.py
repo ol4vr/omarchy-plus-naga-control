@@ -66,7 +66,7 @@ def make_service(worker: FailingWorker, session: FailingSession) -> NagaService:
 
 
 def active_configuration() -> Configuration:
-    return replace(default_configuration(), hardware_writes=True)
+    return replace(default_configuration(), hardware_writes=True, remapping_enabled=True)
 
 
 @pytest.mark.parametrize("phase", ["rescan", "session"])

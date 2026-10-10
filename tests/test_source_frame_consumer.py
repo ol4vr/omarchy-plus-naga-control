@@ -100,14 +100,14 @@ class Actions:
         return True
 
 
-def test_f13_forwards_boundary_and_submits_dpi_action() -> None:
+def test_default_disabled_dpi_up_forwards_boundary_without_dpi_action() -> None:
     consumer, proxy, _, actions, _, _ = _consumer()
     consumer.start()
 
     consumer.consume(_frame("dpi_up", 1, 183))
 
     assert proxy.events == ["flush"]
-    assert actions.intents == [DeviceActionIntent("dpi_stage_up")]
+    assert actions.intents == []
 
 
 def test_f17_writes_held_alt_without_forwarding_its_scan_or_key() -> None:

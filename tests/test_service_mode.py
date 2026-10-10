@@ -12,7 +12,7 @@ from naga_control.service.runtime import NagaService, StaleConfigurationRevision
 
 
 def active_configuration():
-    return replace(default_configuration(), hardware_writes=True)
+    return replace(default_configuration(), hardware_writes=True, remapping_enabled=True)
 
 
 async def test_firmware_start_and_software_transition_order() -> None:
@@ -44,7 +44,15 @@ async def test_mode_switch_fences_actions_and_closes_session_before_write() -> N
     sessions[0].stop_gate = gate
     transition = asyncio.create_task(
         service.apply_configuration(
-            0, dump_toml(replace(active_configuration(), revision=1, mode="firmware"))
+            0,
+            dump_toml(
+                replace(
+                    active_configuration(),
+                    revision=1,
+                    mode="firmware",
+                    remapping_enabled=False,
+                )
+            ),
         )
     )
     await sessions[0].stopping.wait()
@@ -145,7 +153,11 @@ async def test_stop_waits_for_in_flight_transition_and_revision_race() -> None:
     await service.start()
     worker.rescan_gate = asyncio.Event()
     worker.rescan_entered.clear()
-    document = dump_toml(replace(active_configuration(), revision=1, mode="firmware"))
+    document = dump_toml(
+        replace(
+            active_configuration(), revision=1, mode="firmware", remapping_enabled=False
+        )
+    )
     transition = asyncio.create_task(service.apply_configuration(0, document))
     await worker.rescan_entered.wait()
     second = asyncio.create_task(service.apply_configuration(0, document))
@@ -171,7 +183,15 @@ async def test_mode_write_waits_for_queued_worker_work_after_grab_release() -> N
     worker.rescan_entered.clear()
     transition = asyncio.create_task(
         service.apply_configuration(
-            0, dump_toml(replace(active_configuration(), revision=1, mode="firmware"))
+            0,
+            dump_toml(
+                replace(
+                    active_configuration(),
+                    revision=1,
+                    mode="firmware",
+                    remapping_enabled=False,
+                )
+            ),
         )
     )
     await worker.rescan_entered.wait()
@@ -194,7 +214,15 @@ async def test_poll_cannot_publish_after_a_configuration_transition() -> None:
     await worker.read_entered.wait()  # Poll owns the service lock while waiting for hardware.
     change = asyncio.create_task(
         service.apply_configuration(
-            0, dump_toml(replace(active_configuration(), revision=1, mode="firmware"))
+            0,
+            dump_toml(
+                replace(
+                    active_configuration(),
+                    revision=1,
+                    mode="firmware",
+                    remapping_enabled=False,
+                )
+            ),
         )
     )
     await asyncio.sleep(0)

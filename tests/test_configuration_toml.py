@@ -7,7 +7,7 @@ import tomli_w
 
 from naga_control.config import dump_toml, parse_toml, to_toml_data
 from naga_control.domain import ConfigValidationError, default_configuration
-from naga_control.domain.actions import DeviceAction, KeyAction, KeyComboAction, MouseButtonAction
+from naga_control.domain.actions import DisabledAction, KeyAction, KeyComboAction, MouseButtonAction
 from naga_control.domain.hardware import DeviceMode
 from naga_control.domain.profiles import Configuration, Profile, as_logical_control
 
@@ -19,9 +19,11 @@ def test_defaults_are_complete_and_immutable() -> None:
     assert configuration.schema_version == 1
     assert configuration.revision == 0
     assert configuration.mode == "software"
+    assert configuration.hardware_writes is False
+    assert configuration.remapping_enabled is False
     assert profile.plate_layout == 12
-    assert profile.bindings.action_for("dpi_up", 12) == DeviceAction("dpi_stage_up")
-    assert profile.bindings.action_for("dpi_down", 12) == DeviceAction("dpi_stage_down")
+    assert profile.bindings.action_for("dpi_up", 12) == DisabledAction()
+    assert profile.bindings.action_for("dpi_down", 12) == DisabledAction()
     assert profile.bindings.action_for("ring_finger", 12) == KeyAction("left_alt")
     assert profile.bindings.action_for("side_2_front", 2) == MouseButtonAction("back")
     assert profile.bindings.action_for("side_2_rear", 2) == MouseButtonAction("forward")
@@ -82,6 +84,31 @@ def test_root_mode_defaults_for_legacy_toml_without_changing_revision() -> None:
     assert parsed.revision == 7
     assert to_toml_data(parsed)["mode"] == "software"
     assert parse_toml(dump_toml(parsed)) == parsed
+
+
+def test_remapping_defaults_off_for_legacy_toml_and_round_trips() -> None:
+    data = to_toml_data(default_configuration())
+    del data["remapping_enabled"]
+
+    parsed = parse_toml(tomli_w.dumps(data))
+
+    assert parsed.remapping_enabled is False
+    enabled = replace(parsed, remapping_enabled=True)
+    assert parse_toml(dump_toml(enabled)) == enabled
+
+
+def test_remapping_rejects_firmware_mode_and_dpi_stage_bindings() -> None:
+    with pytest.raises(ConfigValidationError, match="requires software device mode"):
+        replace(default_configuration(), mode="firmware", remapping_enabled=True)
+
+    data = to_toml_data(default_configuration())
+    common = cast(
+        dict[str, object], cast(dict[str, object], _profile_data(data)["bindings"])["common"]
+    )
+    common["dpi_up"] = {"type": "device", "action": "dpi_stage_up"}
+    data["remapping_enabled"] = True
+    with pytest.raises(ConfigValidationError, match="must not adjust DPI"):
+        parse_toml(tomli_w.dumps(data))
 
 
 def test_firmware_mode_round_trips_as_a_service_wide_revisioned_setting() -> None:

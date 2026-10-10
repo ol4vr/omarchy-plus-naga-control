@@ -1,6 +1,6 @@
 """Default desired configuration for a Naga V3 Pro profile."""
 
-from naga_control.domain.actions import DeviceAction, KeyAction, MouseButtonAction
+from naga_control.domain.actions import DisabledAction, KeyAction, MouseButtonAction
 from naga_control.domain.profiles import (
     Binding,
     Bindings,
@@ -25,8 +25,8 @@ def default_configuration() -> Configuration:
         plate_layout=12,
         bindings=Bindings(
             common=(
-                Binding(as_logical_control("dpi_up"), DeviceAction("dpi_stage_up")),
-                Binding(as_logical_control("dpi_down"), DeviceAction("dpi_stage_down")),
+                Binding(as_logical_control("dpi_up"), DisabledAction()),
+                Binding(as_logical_control("dpi_down"), DisabledAction()),
                 Binding(as_logical_control("ring_finger"), KeyAction("left_alt")),
             ),
             plate_2=(

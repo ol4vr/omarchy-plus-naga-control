@@ -40,7 +40,9 @@ class Scenario:
         self.events: list[str] = []
         self.worker, self.store = Worker(self.events), Store()
         self.sessions: list[BarrierSession] = []
-        configuration = replace(default_configuration(), hardware_writes=True)
+        configuration = replace(
+            default_configuration(), hardware_writes=True, remapping_enabled=True
+        )
         self.configuration = replace(
             configuration,
             profiles=(
@@ -66,7 +68,10 @@ class Scenario:
         if name == "apply_configuration":
             revision = service.configuration_revision()
             configuration = replace(
-                parse_toml(service.configuration_document()), revision=revision + 1, mode="firmware"
+                parse_toml(service.configuration_document()),
+                revision=revision + 1,
+                mode="firmware",
+                remapping_enabled=False,
             )
             return service.apply_configuration(revision, dump_toml(configuration))
         if name == "select_profile":
@@ -112,7 +117,7 @@ async def test_real_session_rollback_failure_remains_a_service_barrier(rebuild: 
         sessions.append(session)
         return session
 
-    configuration = replace(default_configuration(), hardware_writes=True)
+    configuration = replace(default_configuration(), hardware_writes=True, remapping_enabled=True)
     service = NagaService(lambda: (connection(),), lambda: configuration, worker, factory, store)
     try:
         await bounded(service.start())
