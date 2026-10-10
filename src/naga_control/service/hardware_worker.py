@@ -91,6 +91,9 @@ class HardwareWorker:
     async def move_dpi_stage(self, direction: int) -> HardwareState:
         return await self._submit_current(lambda: self._backend.move_dpi_stage(direction))
 
+    async def set_dpi(self, x: int, y: int) -> HardwareState:
+        return await self._submit_current(lambda: self._backend.set_dpi(x, y))
+
     async def set_scroll_mode(self, mode: HardwareScrollMode) -> HardwareState:
         return await self._submit_current(lambda: self._backend.set_scroll_mode(mode))
 

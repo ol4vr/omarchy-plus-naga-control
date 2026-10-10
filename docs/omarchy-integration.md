@@ -47,6 +47,14 @@ changing the write gate. OpenRazer's daemon-cached poll-rate property is not
 verification, so the current Hugin cohort deliberately remains read-only until
 that discrepancy has a safe, independently verified resolution.
 
+The session service additionally exposes `SetDpi(x, y)` for one owner-requested
+DPI change through the same serialized, topology-fenced OpenRazer worker. This
+is a narrow explicit action, not permission to apply a profile: it leaves
+`hardware_writes`, the configuration revision, saved DPI stages, mappings,
+remapping state, and every lighting zone unchanged. The method returns the
+fresh observed snapshot so callers can verify the write. Omarchy+ Mouse Control
+must use this method and must not access OpenRazer independently.
+
 ## Staging, activation, and rollback
 
 Build an AppDir with the normal builder, then create the Hugin-only bundle:

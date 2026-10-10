@@ -60,6 +60,9 @@ class FakeBackend:
             assert self.release.wait(timeout=2)
         return state
 
+    def set_dpi(self, x: int, y: int) -> HardwareState:
+        return self._record(f"dpi:set:{x}x{y}")
+
     def set_scroll_mode(self, mode: HardwareScrollMode) -> HardwareState:
         return self._record(f"scroll:{mode}")
 

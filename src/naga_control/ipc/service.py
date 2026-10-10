@@ -37,6 +37,8 @@ class ServiceConfigurationProvider(ServiceSnapshotProvider, Protocol):
 
     async def end_calibration(self) -> bool: ...
 
+    async def set_dpi(self, x: int, y: int) -> Mapping[str, object]: ...
+
 
 class NagaControlInterface(ServiceInterface):
     """Expose only safe service state and emergency generated-output release."""
@@ -118,6 +120,25 @@ class NagaControlInterface(ServiceInterface):
     ) -> "b":  # noqa: F821  # pyright: ignore[reportUndefinedVariable, reportUnknownParameterType]
         await self._wait_ready()
         return await self.end_calibration_state()
+
+    @method()
+    async def SetDpi(  # pyright: ignore[reportUnknownParameterType]
+        self,
+        x: "q",  # noqa: F821  # pyright: ignore[reportUndefinedVariable, reportUnknownParameterType]
+        y: "q",  # noqa: F821  # pyright: ignore[reportUndefinedVariable, reportUnknownParameterType]
+    ) -> "s":  # noqa: F821  # pyright: ignore[reportUndefinedVariable, reportUnknownParameterType]
+        await self._wait_ready()
+        return await self.set_dpi_document(
+            x,  # pyright: ignore[reportUnknownArgumentType]
+            y,  # pyright: ignore[reportUnknownArgumentType]
+        )
+
+    async def set_dpi_document(self, x: int, y: int) -> str:
+        try:
+            snapshot = await self._service.set_dpi(x, y)
+        except ValueError as exc:
+            raise DBusError(f"{_ERROR_PREFIX}.InvalidDpi", str(exc)) from exc
+        return json.dumps(snapshot, sort_keys=True, separators=(",", ":"))
 
     def snapshot_document(self) -> str:
         return json.dumps(self._service.snapshot(), sort_keys=True, separators=(",", ":"))

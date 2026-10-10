@@ -34,6 +34,8 @@ class ServiceCalls(Protocol):
 
     async def call_end_calibration(self) -> bool: ...
 
+    async def call_set_dpi(self, x: int, y: int) -> str: ...
+
 
 class _ErrorNames:
     STALE = f"{BUS_NAME}.Error.StaleRevision"
@@ -61,6 +63,9 @@ class NagaControlClient:
 
     async def configuration_document(self) -> str:
         return await self._calls.call_get_configuration()
+
+    async def set_dpi(self, x: int, y: int) -> str:
+        return await self._calls.call_set_dpi(x, y)
 
     async def apply_configuration(self, expected_revision: int, document: str) -> int:
         try:

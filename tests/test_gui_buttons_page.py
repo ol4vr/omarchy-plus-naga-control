@@ -287,7 +287,7 @@ def test_mapping_map_shows_current_bindings(qapp: QApplication) -> None:
     assert dpi_up.toolTip().startswith("DPI up — ")
 
 
-def test_active_remapping_edit_rebases_once_and_persists_across_restart(
+def test_active_remapping_sequential_edits_rebase_once_and_persist_across_restart(
     qapp: QApplication,
 ) -> None:
     from naga_control.gui.actions_view import action_for_control
@@ -330,6 +330,8 @@ def test_active_remapping_edit_rebases_once_and_persists_across_restart(
         )
     )
     page, client = _page(qapp, document)
+    QTest.qWait(0)
+    qapp.processEvents()
     button_11 = _row(page, "side_12_1")
     button_23 = _row(page, "side_6_1")
     button_29 = _row(page, "side_2_front")
@@ -364,10 +366,25 @@ def test_active_remapping_edit_rebases_once_and_persists_across_restart(
     assert page.status_label.text() == "applied"
     assert not page.apply_button.isEnabled()
 
+    button_25 = _row(page, "side_6_3")
+    button_25.detail_edit.setCurrentText("home")
+    page.apply_button.click()
+    qapp.processEvents()
+
+    configuration = parse_toml(client.document)
+    profile = configuration.profile(configuration.active_profile)
+    assert configuration.revision == 18
+    assert configuration.remapping_enabled
+    assert action_for_control(profile.bindings, "side_6_1") == KeyAction("8")
+    assert action_for_control(profile.bindings, "side_6_2") == KeyAction("delete")
+    assert action_for_control(profile.bindings, "side_6_3") == KeyAction("home")
+    assert page.status_label.text() == "applied"
+
     reopened, _reopened_client = _page(qapp, client.document)
     assert _row(reopened, "side_6_1").number_label.text() == "23"
     assert _row(reopened, "side_6_1").detail_edit.currentText() == "8"
     assert _row(reopened, "side_6_2").number_label.text() == "24"
     assert _row(reopened, "side_6_2").detail_edit.currentText() == "delete"
+    assert _row(reopened, "side_6_3").detail_edit.currentText() == "home"
     assert _row(reopened, "side_12_1").number_label.text() == "11"
     assert _row(reopened, "side_12_1").detail_edit.currentText() == "9"

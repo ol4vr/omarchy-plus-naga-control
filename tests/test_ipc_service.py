@@ -47,6 +47,9 @@ class Service:
         self._calibrating = False
         return False
 
+    async def set_dpi(self, x: int, y: int) -> dict[str, object]:
+        return {"status": "available", "observed": {"dpi": [x, y]}}
+
 
 def test_calibration_methods_toggle_the_snapshot_flag() -> None:
     interface = NagaControlInterface(Service())
@@ -69,6 +72,17 @@ def test_dbus_interface_serializes_the_snapshot_and_releases_outputs() -> None:
     interface.release_outputs()
 
     assert service.released
+
+
+def test_explicit_dpi_method_returns_the_verified_snapshot() -> None:
+    interface = NagaControlInterface(Service())
+
+    document = asyncio.run(interface.set_dpi_document(1800, 1800))
+
+    assert json.loads(document) == {
+        "status": "available",
+        "observed": {"dpi": [1800, 1800]},
+    }
 
 
 def test_dbus_configuration_document_round_trips_through_the_parser() -> None:

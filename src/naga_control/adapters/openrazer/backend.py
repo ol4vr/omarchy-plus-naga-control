@@ -17,6 +17,7 @@ from naga_control.adapters.openrazer.settings import apply_steps
 from naga_control.domain.hardware import (
     DeviceMode,
     DeviceModeError,
+    HardwareDpiStage,
     HardwareIssue,
     HardwareIssueCode,
     HardwareScrollMode,
@@ -41,6 +42,7 @@ type ManagerFactory = Callable[[], _ManagerSnapshot]
 
 
 class _MutableClient(Protocol):
+    dpi: object
     dpi_stages: object
     scroll_mode: object
 
@@ -216,6 +218,19 @@ class OpenRazerBackend:
             return self._operation_failure(
                 "invalid_response", "OpenRazer returned invalid DPI stages."
             )
+        except Exception:
+            return self._operation_failure("device_unavailable", "The Naga device is unavailable.")
+        return self._refresh_after_operation(client)
+
+    def set_dpi(self, x: int, y: int) -> HardwareState:
+        target = HardwareDpiStage(x, y)
+        if self._state.max_dpi is not None and max(target.x, target.y) > self._state.max_dpi:
+            raise ValueError(f"DPI must not exceed the device maximum of {self._state.max_dpi}")
+        client = self._client_for_operation()
+        if client is None:
+            return self._state
+        try:
+            cast(_MutableClient, client).dpi = (target.x, target.y)
         except Exception:
             return self._operation_failure("device_unavailable", "The Naga device is unavailable.")
         return self._refresh_after_operation(client)

@@ -243,6 +243,22 @@ Require `status` = `available`. Software remapping is a separate opt-in;
 fresh profiles leave both former DPI buttons disabled and never intentionally
 generate F13. Hardware-setting writes remain independently disabled.
 
+The owned Omarchy+ Mouse Control plugin uses one deliberately narrow explicit
+DPI operation instead of becoming a second OpenRazer writer:
+
+```bash
+gdbus call --session \
+  --dest org.nagacontrol.Service1 \
+  --object-path /org/nagacontrol/Service1 \
+  --method org.nagacontrol.Service1.SetDpi 1800 1800
+```
+
+`SetDpi` validates the requested pair, runs through the existing serialized
+and topology-fenced hardware worker, and returns a JSON snapshot containing the
+observed DPI. It is an explicit hardware action even when broad profile
+`hardware_writes` are disabled. It does not change the configuration revision,
+saved DPI stages, profiles, button mappings, remapping state, or lighting.
+
 ## Status
 
 The repository has hardware-independent coverage for read-only capture, strict
@@ -343,6 +359,8 @@ also appear below Profiles on the Device tab.
 - A PySide6 GUI is a client of that service and may be closed without stopping
   mappings.
 - OpenRazer remains the only hardware-control backend.
+- Explicit external DPI selection must use the service `SetDpi` method so the
+  service remains the single Naga/OpenRazer writer.
 - evdev reads physical controls and uinput emits remapped events.
 - Only event nodes belonging to `1532:00E7` or `1532:00E8` are considered.
 - Wired and HyperSpeed must not be connected simultaneously because both

@@ -12,6 +12,13 @@ installing or upgrading.
 
 ## [Unreleased]
 
+### Added
+
+- Add a narrow `SetDpi(x, y)` session D-Bus method for explicit Omarchy+ Mouse
+  Control requests. It uses the existing serialized OpenRazer worker and
+  returns fresh observed state without changing profiles, configuration
+  revisions, remapping, button assignments, DPI stages, or lighting.
+
 ## [0.5.0] - 2026-10-08
 
 This release improves installer portability, GUI profile/mode clarity, and

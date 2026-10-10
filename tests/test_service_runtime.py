@@ -151,6 +151,28 @@ async def test_device_action_state_updates_the_service_snapshot() -> None:
     await service.stop()
 
 
+async def test_explicit_dpi_write_preserves_configuration_and_active_remapping() -> None:
+    worker = Worker()
+    session = Session()
+    configuration = replace(active_configuration(), hardware_writes=False)
+    service = NagaService(
+        lambda: (_connection(),),
+        lambda: configuration,
+        worker,
+        lambda connection, configuration: session,
+    )
+    await service.start()
+
+    snapshot = await service.set_dpi(1800, 1800)
+
+    assert snapshot["observed"]["dpi"] == (1800, 1800)  # type: ignore[index]
+    assert snapshot["remapping_active"] is True
+    assert service.configuration_revision() == 0
+    assert worker.applied == []
+    assert session.events == ["start"]
+    await service.stop()
+
+
 async def test_topology_removal_stops_the_session_without_building_one() -> None:
     worker = Worker()
     sessions: list[Session] = []

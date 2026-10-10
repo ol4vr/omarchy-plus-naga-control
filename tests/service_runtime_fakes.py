@@ -43,6 +43,10 @@ class Worker:
     async def refresh_state(self) -> HardwareState:
         return available()
 
+    async def set_dpi(self, x: int, y: int) -> HardwareState:
+        self.events.append(f"dpi:{x}x{y}")
+        return available(dpi=(x, y))
+
     async def apply_profile_settings(
         self, profile: Profile
     ) -> tuple[HardwareState, tuple[SettingsFailure, ...]]:
@@ -84,8 +88,8 @@ def connection() -> NagaConnection:
     return NagaConnection("/sys/usb", "1532", "00e8", "hyperspeed", None, None, (node,))
 
 
-def available() -> HardwareState:
-    stage = HardwareDpiStage(800, 800)
+def available(*, dpi: tuple[int, int] = (800, 800)) -> HardwareState:
+    stage = HardwareDpiStage(*dpi)
     return HardwareState(
         "available",
         1,

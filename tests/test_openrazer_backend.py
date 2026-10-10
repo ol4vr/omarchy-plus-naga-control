@@ -37,6 +37,7 @@ class FakeDevice:
         self.brightness = 75.0
         self.fx = _Fx()
         self.stage_writes: list[object] = []
+        self.dpi_writes: list[object] = []
         self.scroll_writes: list[object] = []
         self.idle_writes: list[int] = []
         self.threshold_writes: list[int] = []
@@ -55,6 +56,11 @@ class FakeDevice:
     @property
     def dpi(self) -> object:
         return self._dpi
+
+    @dpi.setter
+    def dpi(self, value: object) -> None:
+        self.dpi_writes.append(value)
+        self._dpi = value
 
     @property
     def dpi_stages(self) -> object:
@@ -281,6 +287,20 @@ def test_dpi_stage_moves_clamp_without_writes_and_preserve_asymmetric_pairs() ->
         (3, ((400, 450), (800, 850), (1200, 1250))),
         (2, ((400, 450), (800, 850), (1200, 1250))),
     ]
+
+
+def test_explicit_dpi_write_does_not_change_stages_or_other_settings() -> None:
+    device = FakeDevice()
+    backend = OpenRazerBackend(lambda: FakeManager((device,)))
+    backend.rescan((_connection("wired"),))
+
+    state = backend.set_dpi(1800, 1800)
+
+    assert state.dpi is not None and (state.dpi.x, state.dpi.y) == (1800, 1800)
+    assert device.dpi_writes == [(1800, 1800)]
+    assert device.stage_writes == []
+    assert device.scroll_writes == []
+    assert device.fx.calls == []
 
 
 def test_action_reacquires_a_client_after_an_unavailable_rescan() -> None:

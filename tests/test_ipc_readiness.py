@@ -27,6 +27,16 @@ METHODS: dict[str, tuple[tuple[object, ...], str, str, object]] = {
     "SelectProfile": (("alternate",), "s", "q", 6),
     "BeginCalibration": ((), "", "b", True),
     "EndCalibration": ((), "", "b", False),
+    "SetDpi": (
+        (1800, 1800),
+        "qq",
+        "s",
+        json.dumps(
+            {"status": "available", "observed": {"dpi": [1800, 1800]}},
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    ),
 }
 
 
@@ -104,6 +114,10 @@ class Service:
         self.record("EndCalibration")
         return False
 
+    async def set_dpi(self, x: int, y: int) -> dict[str, object]:
+        self.record("SetDpi", x, y)
+        return {"status": "available", "observed": {"dpi": [x, y]}}
+
 
 async def cancel_tasks(tasks: list[asyncio.Task[object]]) -> None:
     for task in tasks:
@@ -178,7 +192,7 @@ async def test_unavailable_exported_call_suppresses_active_sensitive_exception()
     assert service.calls == []
 
 
-async def test_mark_ready_wakes_all_seven_queued_calls() -> None:
+async def test_mark_ready_wakes_all_queued_calls() -> None:
     service = Service()
     interface = NagaControlInterface(service, ready=False)
     tasks = [asyncio.create_task(invoke(interface, name)) for name in METHODS]
@@ -319,6 +333,7 @@ def test_nonexported_synchronous_helpers_are_not_readiness_gated(terminal: bool)
             "InvalidConfiguration",
         ),
         ("SelectProfile", UnknownProfileError("missing"), "UnknownProfile"),
+        ("SetDpi", ValueError("invalid DPI"), "InvalidDpi"),
     ],
 )
 async def test_ready_exported_calls_preserve_typed_error_translation(

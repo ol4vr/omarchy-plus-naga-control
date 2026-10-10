@@ -309,6 +309,14 @@ class NagaService:
     def release_all(self) -> None:
         self._sessions.release_all()
 
+    async def set_dpi(self, x: int, y: int) -> dict[str, object]:
+        """Apply one explicit DPI value without changing saved configuration."""
+        async with self._lock:
+            await self._require_mutable()
+            state = await self._worker.set_dpi(x, y)
+            self.record_hardware_state(state)
+            return self.snapshot()
+
     async def begin_calibration(self) -> bool:
         async with self._lock:
             await self._require_mutable()

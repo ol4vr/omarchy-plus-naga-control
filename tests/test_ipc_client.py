@@ -54,6 +54,9 @@ class FakeCalls:
         self.ended = True
         return False
 
+    async def call_set_dpi(self, x: int, y: int) -> str:
+        return f'{{"observed":{{"dpi":[{x},{y}]}}}}'
+
 
 def test_client_passes_documents_and_writes_through() -> None:
     import asyncio
@@ -69,6 +72,7 @@ def test_client_passes_documents_and_writes_through() -> None:
         assert await client.select_profile("fps") == 8
         assert await client.begin_calibration() is True
         assert await client.end_calibration() is False
+        assert await client.set_dpi(1800, 1800) == '{"observed":{"dpi":[1800,1800]}}'
 
     asyncio.run(scenario())
     assert calls.applied == (3, "doc")
