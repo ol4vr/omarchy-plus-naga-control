@@ -6,7 +6,7 @@ from typing import Any
 
 from naga_control.config import dump_toml, parse_toml
 from naga_control.domain.defaults import default_configuration
-from naga_control.ipc.client import NagaControlClient
+from naga_control.ipc.client import NagaControlClient, StaleRevisionError
 
 SNAPSHOT = '{"status":"available","generation":9,"transport":"hyperspeed","error":null}'
 
@@ -52,6 +52,8 @@ class FakeClient(NagaControlClient):
         return self.document
 
     async def apply_configuration(self, expected_revision: int, document: str) -> int:
+        if expected_revision != parse_toml(self.document).revision:
+            raise StaleRevisionError("configuration changed elsewhere")
         self.applied.append(document)
         self.document = document
         return parse_toml(document).revision
