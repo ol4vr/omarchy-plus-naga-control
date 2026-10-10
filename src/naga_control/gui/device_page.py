@@ -25,7 +25,12 @@ class DevicePage(TwoColumns):
         self.power.apply_button.setText("Apply power")
 
         connection = QGroupBox("Connection and Battery")
-        QVBoxLayout(connection).addWidget(self.overview)
+        connection_layout = QVBoxLayout(connection)
+        profiles_layout = self.profiles.layout()
+        assert profiles_layout is not None
+        profiles_layout.removeWidget(self.profiles.remapping_button)
+        connection_layout.addWidget(self.profiles.remapping_button)
+        connection_layout.addWidget(self.overview)
         power = QGroupBox("Power")
         QVBoxLayout(power).addWidget(self.power)
         left = QWidget()

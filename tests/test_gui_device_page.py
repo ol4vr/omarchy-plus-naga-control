@@ -1,5 +1,6 @@
 import os
 from collections.abc import Iterator
+from dataclasses import replace
 from typing import cast
 from unittest.mock import AsyncMock, Mock
 
@@ -8,10 +9,11 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from gui_support import FakeClient, make_presenter, sync_run
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtWidgets import QApplication, QComboBox, QGroupBox, QLabel, QVBoxLayout, QWidget
 
-from naga_control.config import parse_toml
+from naga_control.config import dump_toml, parse_toml
+from naga_control.domain.defaults import default_configuration
 from naga_control.gui.device_page import DevicePage
 from naga_control.gui.models import ObservedView, ServiceSnapshotView
 from naga_control.gui.overview_page import OverviewPage
@@ -110,6 +112,46 @@ def test_device_groups_and_only_selected_plate_selector(qapp: QApplication) -> N
     qapp.processEvents()
     assert page.is_stacked
     assert page.horizontalScrollBar().maximum() == 0
+    page.close()
+
+
+def test_remapping_control_stays_visible_and_reports_actual_activity(qapp: QApplication) -> None:
+    page, _client = _page(qapp)
+    page.resize(640, 400)
+    page.show()
+    qapp.processEvents()
+
+    button = page.profiles.remapping_button
+    top = button.mapTo(page.viewport(), QPoint(0, 0)).y()
+    assert top >= 0
+    assert top + button.height() <= page.viewport().height()
+    assert button.text() == "Enable remapping"
+
+    enabled = replace(default_configuration(), remapping_enabled=True)
+    page.profiles.model.apply_configuration(enabled.revision, dump_toml(enabled))
+    page.profiles.model.apply_snapshot(
+        ServiceSnapshotView(
+            "available",
+            2,
+            "hyperspeed",
+            None,
+            desired_mode="software",
+            observed_mode="software",
+            mode_ready=True,
+            remapping_enabled=True,
+            remapping_active=False,
+        )
+    )
+    qapp.processEvents()
+
+    assert button.text() == "Disable remapping"
+    assert page.overview.status_label.text() == "Enabled; waiting for input access"
+
+    snapshot = page.profiles.model.snapshot
+    assert snapshot is not None
+    page.profiles.model.apply_snapshot(replace(snapshot, remapping_active=True))
+    qapp.processEvents()
+    assert page.overview.status_label.text() == "Active (software mode verified)"
     page.close()
 
 
