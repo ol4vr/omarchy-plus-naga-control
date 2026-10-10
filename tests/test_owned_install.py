@@ -9,6 +9,16 @@ from scripts.build_hugin_bundle import build
 from scripts.owned_install import STATE_RELATIVE, activate, remove, stage, upgrade
 
 
+def test_desktop_entry_uses_installer_owned_launcher() -> None:
+    desktop = (
+        Path(__file__).parents[1] / "system/desktop/org.nagacontrol.NagaControl.desktop"
+    ).read_text(encoding="utf-8")
+
+    assert [line for line in desktop.splitlines() if line.startswith("Exec=")] == [
+        "Exec=naga-control"
+    ]
+
+
 def _bundle(tmp_path: Path, marker: str = "current") -> tuple[Path, str]:
     appdir = tmp_path / f"input-{marker}" / "arbitrary-build-directory"
     files = {
