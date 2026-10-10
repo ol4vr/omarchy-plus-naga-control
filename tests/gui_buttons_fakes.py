@@ -52,11 +52,13 @@ class FakeClient(NagaControlClient):
         return self.document
 
     async def apply_configuration(self, expected_revision: int, document: str) -> int:
-        if expected_revision != parse_toml(self.document).revision:
+        current = parse_toml(self.document)
+        submitted = parse_toml(document)
+        if expected_revision != current.revision or submitted.revision != current.revision + 1:
             raise StaleRevisionError("configuration changed elsewhere")
         self.applied.append(document)
         self.document = document
-        return parse_toml(document).revision
+        return submitted.revision
 
     async def select_profile(self, profile_id: str) -> int:
         return 1

@@ -14,11 +14,10 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from naga_control.config import dump_toml, parse_toml
-from naga_control.domain.actions import KeyAction, KeyComboAction, MouseButtonAction
+from naga_control.domain.actions import DisabledAction, KeyAction, KeyComboAction, MouseButtonAction
 from naga_control.domain.defaults import default_configuration
 from naga_control.domain.profiles import Binding
 from naga_control.gui.buttons_page import ButtonsPage
-from naga_control.gui.editors import set_bindings
 from naga_control.gui.models import ServiceModel
 from naga_control.gui.presenter import GuiPresenter
 
@@ -288,7 +287,7 @@ def test_mapping_map_shows_current_bindings(qapp: QApplication) -> None:
     assert dpi_up.toolTip().startswith("DPI up — ")
 
 
-def test_button_23_targets_only_six_button_binding_across_stale_retry_and_restart(
+def test_active_remapping_edit_rebases_once_and_persists_across_restart(
     qapp: QApplication,
 ) -> None:
     from naga_control.gui.actions_view import action_for_control
@@ -296,19 +295,37 @@ def test_button_23_targets_only_six_button_binding_across_stale_retry_and_restar
 
     configuration = default_configuration()
     profile = configuration.profile(configuration.active_profile)
+    common = tuple(
+        Binding("dpi_up", KeyAction("f12"))
+        if binding.control_id == "dpi_up"
+        else Binding("dpi_down", DisabledAction())
+        if binding.control_id == "dpi_down"
+        else binding
+        for binding in profile.bindings.common
+    )
     plate_12 = tuple(
         Binding("side_12_1", KeyAction("9")) if binding.control_id == "side_12_1" else binding
         for binding in profile.bindings.plate_12
     )
+    plate_6 = tuple(
+        Binding("side_6_1", KeyAction("8")) if binding.control_id == "side_6_1" else binding
+        for binding in profile.bindings.plate_6
+    )
     profile = replace(
         profile,
         plate_layout=6,
-        bindings=replace(profile.bindings, plate_12=plate_12),
+        bindings=replace(
+            profile.bindings,
+            common=common,
+            plate_12=plate_12,
+            plate_6=plate_6,
+        ),
     )
     document = dump_toml(
         replace(
             configuration,
-            revision=11,
+            revision=15,
+            remapping_enabled=True,
             profiles=((configuration.active_profile, profile),),
         )
     )
@@ -326,31 +343,31 @@ def test_button_23_targets_only_six_button_binding_across_stale_retry_and_restar
     assert "rgba(68, 255, 136" in button_23.root.styleSheet()
     assert button_11.root.styleSheet() == ""
 
-    client.document = set_bindings(
-        client.document,
-        configuration.active_profile,
-        {"side_6_1": KeyAction("9")},
-    )
-    button_23.detail_edit.setCurrentText("8")
-    page.apply_button.click()
-    qapp.processEvents()
-
-    assert page.status_label.text() == "changed on the service; reloaded, apply again"
-    assert page.apply_button.isEnabled()
+    client.document = dump_toml(replace(parse_toml(client.document), revision=16))
+    button_24 = _row(page, "side_6_2")
+    assert button_24.number_label.text() == "24"
+    button_24.detail_edit.setCurrentText("delete")
     page.apply_button.click()
     qapp.processEvents()
 
     configuration = parse_toml(client.document)
     profile = configuration.profile(configuration.active_profile)
+    assert configuration.revision == 17
+    assert configuration.remapping_enabled
     assert profile.plate_layout == 6
     assert action_for_control(profile.bindings, "side_6_1") == KeyAction("8")
+    assert action_for_control(profile.bindings, "side_6_2") == KeyAction("delete")
     assert action_for_control(profile.bindings, "side_12_1") == KeyAction("9")
     assert button_23.detail_edit.currentText() == "8"
+    assert button_24.detail_edit.currentText() == "delete"
     assert button_11.detail_edit.currentText() == "9"
     assert page.status_label.text() == "applied"
+    assert not page.apply_button.isEnabled()
 
     reopened, _reopened_client = _page(qapp, client.document)
     assert _row(reopened, "side_6_1").number_label.text() == "23"
     assert _row(reopened, "side_6_1").detail_edit.currentText() == "8"
+    assert _row(reopened, "side_6_2").number_label.text() == "24"
+    assert _row(reopened, "side_6_2").detail_edit.currentText() == "delete"
     assert _row(reopened, "side_12_1").number_label.text() == "11"
     assert _row(reopened, "side_12_1").detail_edit.currentText() == "9"

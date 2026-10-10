@@ -288,23 +288,38 @@ class ButtonsPage(QWidget):
             self.model.set_apply_status("service unreachable")
             return
         try:
-            updated = set_bindings(document, self.profile_id, self._replacements())
+            replacements = self._replacements()
+            updated = set_bindings(document, self.profile_id, replacements)
         except (ConfigValidationError, KeyError) as exc:
             self.model.set_apply_status(f"rejected: {exc}")
             return
         self._pending_document = updated
         self.setEnabled(False)
         self.model.set_apply_status("applying…")
-        self._run(lambda: self._apply_document(updated))
+        self._run(lambda: self._apply_document(updated, replacements))
 
-    async def _apply_document(self, document: str) -> None:
+    async def _apply_document(
+        self,
+        document: str,
+        replacements: dict[LogicalControlId, Action | None],
+    ) -> None:
         outcome = await self.presenter.apply_configuration(document)
+        if outcome is ApplyOutcome.STALE and self.model.configuration_document is not None:
+            try:
+                document = set_bindings(
+                    self.model.configuration_document,
+                    self.profile_id,
+                    replacements,
+                )
+            except (ConfigValidationError, KeyError):
+                outcome = ApplyOutcome.INVALID
+            else:
+                self._pending_document = document
+                outcome = await self.presenter.apply_configuration(document)
         self.model.set_apply_status(_OUTCOME_TEXT[outcome])
         if outcome is not ApplyOutcome.APPLIED:
             self._pending_document = None
         self.apply_finished.emit()
-        if outcome is ApplyOutcome.STALE:
-            await self.presenter.refresh()
 
     def _finish_apply(self) -> None:
         self.setEnabled(True)
