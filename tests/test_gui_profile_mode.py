@@ -147,9 +147,7 @@ def test_requested_observed_and_remapping_are_separate(
 
 def test_verified_software_mode_does_not_claim_disabled_remapping_is_active() -> None:
     model = ServiceModel()
-    model.apply_snapshot(
-        _snapshot(remapping_enabled=False, remapping_active=False)
-    )
+    model.apply_snapshot(_snapshot(remapping_enabled=False, remapping_active=False))
 
     assert device_mode_view(model).remapping == "Off (disabled)"
 

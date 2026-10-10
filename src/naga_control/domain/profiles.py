@@ -235,9 +235,7 @@ class Configuration:
         if type(self.remapping_enabled) is not bool:
             raise ConfigValidationError("remapping_enabled", "must be a boolean")
         if self.remapping_enabled and self.mode != "software":
-            raise ConfigValidationError(
-                "remapping_enabled", "requires software device mode"
-            )
+            raise ConfigValidationError("remapping_enabled", "requires software device mode")
         _validate_range(self.revision, "revision", 0, 2**63 - 1)
         if not self.profiles:
             raise ConfigValidationError("profiles", "must contain at least one profile")

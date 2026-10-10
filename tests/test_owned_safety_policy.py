@@ -186,15 +186,15 @@ def test_f13_is_reserved_from_naga_generated_output(action: Callable[[], object]
 
 
 def test_udev_rule_grants_only_naga_inputs_and_uinput() -> None:
-    rule = (
-        Path(__file__).parents[1] / "system/udev/70-naga-control.rules"
-    ).read_text(encoding="utf-8")
+    rule = (Path(__file__).parents[1] / "system/udev/70-naga-control.rules").read_text(
+        encoding="utf-8"
+    )
 
     assert rule.count('TAG+="uaccess"') == 3
     assert 'ATTRS{idProduct}=="00e7"' in rule
     assert 'ATTRS{idProduct}=="00e8"' in rule
     assert 'KERNEL=="uinput"' in rule
-    assert 'ATTRS{name}' not in rule
+    assert "ATTRS{name}" not in rule
     assert "046d" not in rule.lower()
 
 

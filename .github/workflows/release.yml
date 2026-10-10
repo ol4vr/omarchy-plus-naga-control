@@ -71,11 +71,15 @@ jobs:
           .venv/bin/python -m buildpython --profile full
           status=$?
           if [ "$status" -ne 0 ]; then
-            if [ -f buildlog/naga-control/step-02-pytest.log ]; then
-              cat buildlog/naga-control/step-02-pytest.log
-            else
-              echo "pytest failure log missing: buildlog/naga-control/step-02-pytest.log" >&2
-            fi
+            test -f buildlog/naga-control/build-summary.md && cat buildlog/naga-control/build-summary.md
+            found_failure_log=0
+            for log in buildlog/naga-control/step-*.log; do
+              test -f "$log" || continue
+              grep -q '^Status: failure$' "$log" || continue
+              cat "$log"
+              found_failure_log=1
+            done
+            test "$found_failure_log" = 1 || echo "failed-step log not found" >&2
           fi
           exit "$status"
       - name: Controlled Ubuntu 22.04 build, static gate, and baseline check

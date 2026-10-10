@@ -64,12 +64,32 @@ It does not place a user unit, D-Bus activation file, desktop file, udev rule,
 or executable in an active search path. It never invokes systemctl or executes
 the payload.
 
+An existing owned stage or active installation is updated through the same
+installer rather than removed manually:
+
+```text
+python scripts/owned_install.py --home "$HOME" upgrade \
+  --bundle dist/Naga-Control-0.5.0-hugin-x86_64.tar.xz --sha256 <reviewed-sha256>
+```
+
+Upgrade first verifies and extracts the new bundle without changing the active
+installation. It refuses unless `hardware_writes`, `remapping_enabled`, and
+every profile's `lighting_writes` are false. For an active installation it
+preserves whether the unit was running, stops that single unit before replacing
+manifest-owned files, reloads the user manager, and starts the new version only
+when the old version was running, then confirms the unit remains active. Any
+replacement, reload, start, or immediate active-state failure restores the old
+files and state, reloads again, and restarts the former working version.
+Configuration and profiles under `~/.config/naga-control/` are never replaced.
+The old staged payload is removed only after successful replacement.
+
 A separately authorized pilot may run the `activate` subcommand. Activation
-refuses a configuration with hardware writes enabled, atomically installs only
-manifested user integration, runs `systemctl --user daemon-reload`, and starts
-but never enables `naga-control.service`. A failed start stops the unit and
-removes every file written by that attempt. It never installs udev rules or
-changes groups; the existing device-scoped access must be reviewed separately.
+refuses a configuration with hardware, remapping, or lighting writes enabled,
+atomically installs only manifested user integration, runs `systemctl --user
+daemon-reload`, and starts but never enables `naga-control.service`. A failed
+start stops the unit and removes every file written by that attempt. It never
+installs udev rules or changes groups; the existing device-scoped access must
+be reviewed separately.
 
 Removal refuses while the service is active and refuses to delete a modified
 owned file. After an authorized stop, `remove` removes exact manifested user

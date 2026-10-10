@@ -154,9 +154,7 @@ async def test_stop_waits_for_in_flight_transition_and_revision_race() -> None:
     worker.rescan_gate = asyncio.Event()
     worker.rescan_entered.clear()
     document = dump_toml(
-        replace(
-            active_configuration(), revision=1, mode="firmware", remapping_enabled=False
-        )
+        replace(active_configuration(), revision=1, mode="firmware", remapping_enabled=False)
     )
     transition = asyncio.create_task(service.apply_configuration(0, document))
     await worker.rescan_entered.wait()

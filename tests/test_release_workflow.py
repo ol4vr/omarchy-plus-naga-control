@@ -9,7 +9,7 @@ from tests.release_assets_fakes import ROOT
 
 WORKFLOW = (ROOT / ".github/workflows/release.yml").read_text()
 
-PYTEST_LOG = "buildlog/naga-control/step-02-pytest.log"
+BUILD_SUMMARY = "buildlog/naga-control/build-summary.md"
 
 
 def jobs() -> dict[str, str]:
@@ -151,23 +151,27 @@ def _validation_script(workflow_text: str, step_name: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def test_release_validation_prints_pytest_log_and_preserves_status() -> None:
+def test_release_validation_prints_failed_step_log_and_preserves_status() -> None:
     appimage = jobs()["appimage"]
     assert ".venv/bin/python -m buildpython --profile full" in appimage
-    assert PYTEST_LOG in appimage
-    assert f"cat {PYTEST_LOG}" in appimage
+    assert BUILD_SUMMARY in appimage
+    assert "buildlog/naga-control/step-*.log" in appimage
+    assert "grep -q '^Status: failure$'" in appimage
+    assert 'cat "$log"' in appimage
+    assert "pytest failure log missing" not in appimage
     assert "status=$?" in appimage
     assert 'exit "$status"' in appimage
     assert 'if [ "$status" -ne 0 ]' in appimage
     assert "continue-on-error" not in appimage
     full_pos = appimage.index("--profile full")
-    log_pos = appimage.index(PYTEST_LOG)
+    log_pos = appimage.index(BUILD_SUMMARY)
     portable_pos = appimage.index("portable-build.sh")
     smoke_pos = appimage.index('--run-steps "AppImage Smoke"')
     stage_pos = appimage.index("Stage exactly one AppImage")
     assert full_pos < log_pos < portable_pos < smoke_pos < stage_pos
     script = _validation_script(WORKFLOW, "Validate source with full profile on host")
-    assert f"cat {PYTEST_LOG}" in script
+    assert BUILD_SUMMARY in script
+    assert 'cat "$log"' in script
     assert 'exit "$status"' in script
     result = subprocess.run(
         ["bash", "-n"], input=script, text=True, capture_output=True, check=False
@@ -175,17 +179,21 @@ def test_release_validation_prints_pytest_log_and_preserves_status() -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_ci_validation_prints_pytest_log_and_preserves_status() -> None:
+def test_ci_validation_prints_failed_step_log_and_preserves_status() -> None:
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
     assert ".venv/bin/python -m buildpython --profile ci" in workflow
-    assert PYTEST_LOG in workflow
-    assert f"cat {PYTEST_LOG}" in workflow
+    assert BUILD_SUMMARY in workflow
+    assert "buildlog/naga-control/step-*.log" in workflow
+    assert "grep -q '^Status: failure$'" in workflow
+    assert 'cat "$log"' in workflow
+    assert "pytest failure log missing" not in workflow
     assert "status=$?" in workflow
     assert 'exit "$status"' in workflow
     assert 'if [ "$status" -ne 0 ]' in workflow
     assert "continue-on-error" not in workflow
     script = _validation_script(workflow, "Standard validation (hardware tests remain excluded)")
-    assert f"cat {PYTEST_LOG}" in script
+    assert BUILD_SUMMARY in script
+    assert 'cat "$log"' in script
     assert 'exit "$status"' in script
     result = subprocess.run(
         ["bash", "-n"], input=script, text=True, capture_output=True, check=False
