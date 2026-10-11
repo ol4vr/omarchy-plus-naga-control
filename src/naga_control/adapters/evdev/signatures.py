@@ -35,7 +35,7 @@ def _plate_12(product_id: str) -> dict[RawControlSignature, LogicalControlId]:
 
 
 def _plate_6(product_id: str) -> dict[RawControlSignature, LogicalControlId]:
-    """The sanitized 2026-09-28 HyperSpeed 6-button plate capture."""
+    """The sanitized 6-button plate capture, verified on both transports."""
     translations = _common(product_id)
     for number in range(1, 7):
         signature = RawControlSignature(product_id, "02", EV_KEY, number + 1, 458781 + number)
@@ -53,6 +53,7 @@ def _plate_2(product_id: str) -> dict[RawControlSignature, LogicalControlId]:
 
 _WIRED_TRANSLATIONS: dict[int, Mapping[RawControlSignature, LogicalControlId]] = {
     12: MappingProxyType(_plate_12("00e7")),
+    6: MappingProxyType(_plate_6("00e7")),
 }
 _HYPER_SPEED_TRANSLATIONS: dict[int, Mapping[RawControlSignature, LogicalControlId]] = {
     12: MappingProxyType(_plate_12("00e8")),

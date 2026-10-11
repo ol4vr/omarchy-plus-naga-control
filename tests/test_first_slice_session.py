@@ -1,7 +1,10 @@
 import asyncio
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
-from naga_control.adapters.evdev.discovery import EventNode, NagaConnection
+import pytest
+
+from naga_control.adapters.evdev.discovery import EventNode, NagaConnection, Transport
 from naga_control.application.remapping import FirstSliceSession, PreparedSource
 from naga_control.domain.defaults import default_configuration
 from naga_control.domain.intents import DeviceActionIntent, KeyOutputIntent, MouseButtonOutputIntent
@@ -9,6 +12,7 @@ from naga_control.ports.forwarding import (
     ForwardingProxy,
     ForwardingProxySpec,
 )
+from naga_control.service.source_forwarding import SourceActivationError
 
 
 class Output:
@@ -148,6 +152,31 @@ async def test_session_start_failure_closes_shared_outputs() -> None:
     assert mouse.released and mouse.closed
 
 
+async def test_session_rejects_a_transport_plate_without_captured_readers() -> None:
+    keyboard = Output()
+    mouse = Output()
+    actions = Actions()
+    profile = replace(default_configuration().profile("default"), plate_layout=2)
+    session = FirstSliceSession(
+        _connection("00e7", "wired"),
+        profile,
+        keyboard,
+        mouse,
+        actions,
+        lambda node: (_ for _ in ()).throw(AssertionError(f"opened {node}")),
+        _ProxyFactory(),
+        _Waiter(),
+    )
+
+    with pytest.raises(SourceActivationError, match="1532:00e7 plate 2"):
+        await session.start()
+
+    assert not session.running
+    assert actions.events == ["start", "stop"]
+    assert keyboard.released and keyboard.closed
+    assert mouse.released and mouse.closed
+
+
 class _FailingReader:
     def start(self) -> None:
         raise RuntimeError("physical source is already grabbed")
@@ -159,13 +188,13 @@ class _FailingReader:
         return None
 
 
-def _connection() -> NagaConnection:
-    nodes = tuple(_node(interface) for interface in ("00", "01", "02"))
-    return NagaConnection("/sys/usb", "1532", "00e8", "hyperspeed", None, None, nodes)
+def _connection(product_id: str = "00e8", transport: Transport = "hyperspeed") -> NagaConnection:
+    nodes = tuple(_node(interface, product_id) for interface in ("00", "01", "02"))
+    return NagaConnection("/sys/usb", "1532", product_id, transport, None, None, nodes)
 
 
-def _node(interface: str) -> EventNode:
-    return EventNode(f"/dev/input/event{interface}", "/sys/usb", interface, "1532", "00e8")
+def _node(interface: str, product_id: str = "00e8") -> EventNode:
+    return EventNode(f"/dev/input/event{interface}", "/sys/usb", interface, "1532", product_id)
 
 
 def _source(node: EventNode) -> PreparedSource:

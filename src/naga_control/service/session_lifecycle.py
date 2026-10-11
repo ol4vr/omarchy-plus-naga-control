@@ -21,6 +21,10 @@ class SessionLifecycle:
         return self._current
 
     @property
+    def running(self) -> bool:
+        return self._current is not None and self._current.running
+
+    @property
     def unsafe(self) -> bool:
         task = self._task
         return task is not None and (

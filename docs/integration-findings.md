@@ -305,8 +305,11 @@ A 2026-09-28 wired capture produced identical signatures for every 12-button
 control, so both transports share the table. The same day's alternate-plate
 captures found `KEY_1` through `KEY_6` (scans 458782-458787, interface `02`)
 for the 6-button plate and `BTN_EXTRA` front / `BTN_SIDE` rear (scans
-589829/589828, interface `00`) for the 2-button plate, on HyperSpeed. Wired
-alternate-plate signatures remain uncaptured.
+589829/589828, interface `00`) for the 2-button plate, on HyperSpeed. A
+2026-10-11 read-only wired capture independently confirmed all six 6-button
+positions on interface `02` with the same codes and scans, clean press/release
+pairs, and no duplicate key reports on interfaces `00` or `01`. Wired 2-button
+signatures remain uncaptured.
 
 ### 12-Button First-Slice Captures
 

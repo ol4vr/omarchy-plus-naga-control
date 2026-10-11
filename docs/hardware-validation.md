@@ -236,8 +236,15 @@ Hardware validation with the production service:
   grabbed (F13 3->4, F14 4->3, held F17 -> LEFTALT, no session errors, clean
   teardown of every proxy and grab)
 
-Wired 6- and 2-button plates remain uncaptured and stay out of the wired
-translation table until evidence exists.
+On 2026-10-11, a bounded read-only wired capture with the 6-button plate
+recorded positions 1 through 6 exclusively on interface `02` as `KEY_1`
+through `KEY_6` (codes 2-7), with scans 458782-458787. Every position had a
+clean press/release pair and there were no duplicate key reports on interfaces
+`00` or `01`. The sanitized `tests/fixtures/wired-6-plate.json` now backs the
+wired translation table. The capture used kernel `7.2.5-3-omarchy`,
+python-evdev 2.0.0, mouse firmware v1.0, driver mode `3:0`, and pinned
+OpenRazer revision `26b0eeb5ed70d638fa3528851adcd5e58369a7f5` under Wayland.
+Wired 2-button signatures remain uncaptured and stay disabled.
 
 ## Desktop Passthrough Soak (2026-09-28, HyperSpeed, 12-button, Wayland)
 
@@ -282,7 +289,8 @@ The custom OpenRazer `add-razer-naga-v3-pro-support` baseline at commit
 | DPI, stages, poll rate, RGB, and scroll controls | pass | pass |
 | 12-button plate input mapping | pass | pass |
 | suspend/resume | pass | pass |
-| 6- and 2-button plate input mapping | not recorded | pass |
+| 6-button plate input mapping | pass (2026-10-11 capture) | pass |
+| 2-button plate input mapping | not recorded | pass |
 
 The 12-button plate produced `KEY_F13` through `KEY_F17` for DPI, wheel tilt,
 and Hypershift on both transports. Its side controls produced `KEY_1` through
@@ -391,7 +399,7 @@ Input codes and clean transitions are already established for every plate over
 HyperSpeed and for the 12-button plate over wired. Remaining plate validation:
 
 - produce fixture-quality captures with interface and scan signatures
-- confirm the 2- and 6-button mappings over wired
+- confirm the 2-button mapping over wired
 - remove and insert the plate while all sibling nodes are monitored
 - inspect udev, evdev, and OpenRazer state for a plate-change signal
 - verify whether a held side button receives a release when the plate is removed

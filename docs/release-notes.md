@@ -65,7 +65,7 @@ claims no real ABI, distro install, or launch acceptance.
 ### Known limits for 0.5.0
 
 - Exact-pin natural idle/wake, held-output handoff, and interactive mode-switch
-  tests are unverified; wired 6- and 2-button signatures remain uncaptured.
+  tests are unverified; wired 2-button signatures remain uncaptured.
 - Manual extraction is launch-only, not managed FUSEless installation.
 - Representative distro install and launch are not yet verified.
 - Safety pins and the exact-pin OpenRazer cohort are unchanged; see the
@@ -302,12 +302,13 @@ and results. Run neither the GUI nor the service as root.
 - Only Razer Naga V3 Pro wired `1532:00E7` and HyperSpeed `1532:00E8` are
   supported. Use one transport at a time; simultaneous attachment causes an
   OpenRazer serial-identity conflict. Bluetooth and other devices are excluded.
-- The 12-button plate has captured signatures for both transports. The 6- and
-  2-button tables are HyperSpeed-only; wired alternate-plate signatures remain
+- The 12- and 6-button plates have captured signatures for both transports.
+  The 2-button table is HyperSpeed-only; wired 2-button signatures remain
   uncaptured and are not enabled.
 - Attached-plate selection is manual under **Device > Profiles** in 0.4.0.
   Editing every plate's bindings does not detect the attached plate or enable
-  an uncaptured wired mapping. The 6- and 2-button plates are unlit by design.
+  the uncaptured wired 2-button mapping. The 6- and 2-button plates are unlit
+  by design.
 - Primary clicks and wheel scrolling remain passthrough, not editable bindings.
 - Driver mode `3:0` is required for mapped events. Idle can silently revert it
   to `0:0`, suppressing special-button and grid events until it is reasserted.

@@ -61,11 +61,14 @@ class Worker:
 class Session:
     def __init__(self) -> None:
         self.events: list[str] = []
+        self.running = False
 
     async def start(self) -> None:
+        self.running = True
         self.events.append("start")
 
     async def stop(self) -> None:
+        self.running = False
         self.events.append("stop")
 
     def release_all(self) -> None:

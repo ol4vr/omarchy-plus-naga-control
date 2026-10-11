@@ -385,7 +385,7 @@ class NagaService:
             self._calibrating,
             self._observed_mode,
             self._mode_error,
-            self._sessions.current is not None,
+            self._sessions.running,
         )
 
     async def stop(self) -> None:

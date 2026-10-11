@@ -30,6 +30,9 @@ class ServiceHardwareWorker(Protocol):
 
 
 class RemappingSession(Protocol):
+    @property
+    def running(self) -> bool: ...
+
     async def start(self) -> None: ...
 
     async def stop(self) -> None: ...

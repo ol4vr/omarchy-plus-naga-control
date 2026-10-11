@@ -100,13 +100,16 @@ class Worker:
 class Session:
     def __init__(self, events: list[str]) -> None:
         self.events = events
+        self.running = False
         self.stop_gate: asyncio.Event | None = None
         self.stopping = asyncio.Event()
 
     async def start(self) -> None:
+        self.running = True
         self.events.append("session.start")
 
     async def stop(self) -> None:
+        self.running = False
         self.events.append("session.stop")
         self.stopping.set()
         if self.stop_gate is not None:

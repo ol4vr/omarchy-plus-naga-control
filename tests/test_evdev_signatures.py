@@ -35,6 +35,6 @@ def test_translations_cover_only_captured_transport_and_plate_combinations() -> 
     assert len(translations_for("00e8", 6)) == 13
     assert len(translations_for("00e8", 2)) == 9
     assert len(translations_for("00e7", 12)) == 19
-    assert not translations_for("00e7", 6)
+    assert len(translations_for("00e7", 6)) == 13
     assert not translations_for("00e7", 2)
     assert not translations_for("00e9", 12)

@@ -281,7 +281,7 @@ firmware values for the GUI Device tab, profile management selects the side-plat
 layout (12/6/2) with revision-checked apply, and a calibration mode rebuilds
 forwarding as pure passthrough and adopts the observed DPI stages and scroll
 settings into the active profile on end. Broader passthrough and wired
-alternate-plate capture remain.
+2-button plate capture remain.
 
 Naga V3 Pro support is intentionally developed against a compatible custom
 OpenRazer build while

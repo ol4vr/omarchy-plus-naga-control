@@ -11,14 +11,14 @@ def snapshot_document(
     calibrating: bool,
     observed_mode: DeviceMode | None,
     mode_error: str | None,
-    has_session: bool,
+    remapping_active: bool,
 ) -> dict[str, object]:
     mode_ready = (
         state is not None
         and state.status == "available"
         and configuration is not None
         and observed_mode == configuration.mode
-        and (not configuration.remapping_enabled or observed_mode == "firmware" or has_session)
+        and (not configuration.remapping_enabled or observed_mode == "firmware" or remapping_active)
     )
     status = state.status if state is not None else "absent"
     if (
@@ -45,7 +45,7 @@ def snapshot_document(
         "remapping_enabled": (
             configuration.remapping_enabled if configuration is not None else False
         ),
-        "remapping_active": has_session,
+        "remapping_active": remapping_active,
         "lighting_writes_enabled": (
             configuration.profile(configuration.active_profile).lighting_writes
             if configuration is not None

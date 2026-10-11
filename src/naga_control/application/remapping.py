@@ -20,7 +20,7 @@ from naga_control.ports.hardware import DeviceActionSubmitter
 from naga_control.ports.output import KeyboardOutput, MouseOutput
 from naga_control.service.action_dispatcher import ActionDispatcher
 from naga_control.service.frame_planner import FramePlanner
-from naga_control.service.source_forwarding import ManagedSource
+from naga_control.service.source_forwarding import ManagedSource, SourceActivationError
 from naga_control.service.source_frame_consumer import SourceFrameConsumer
 from naga_control.service.source_reader import SourceReader
 
@@ -140,7 +140,14 @@ class FirstSliceSession:
             await self._device_actions.start()
             if self._stopped:
                 raise RuntimeError("first-slice session is stopped")
-            for node in _mapped_nodes(self._connection, self._profile):
+            nodes = _mapped_nodes(self._connection, self._profile)
+            if not nodes:
+                raise SourceActivationError(
+                    "no captured input translations for "
+                    f"{self._connection.vendor_id}:{self._connection.product_id} "
+                    f"plate {self._profile.plate_layout}"
+                )
+            for node in nodes:
                 source = self._source_opener(node)
                 try:
                     reader = self._reader_factory(

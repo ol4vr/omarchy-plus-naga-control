@@ -56,9 +56,9 @@ Relevant code: `gui/profiles_page.py`, `gui/profile_controls.py`,
   an idle attachment or proves that a later swap did not occur.
 - Static evdev capabilities, lighting state, device names, and `eventN` paths
   are not plate identity and must not be used as substitutes.
-- Wired 6- and 2-button signatures remain uncaptured. Their wired translation
-  lookup currently returns an empty table, not a supported alternate layout.
-  Consider an explicit unsupported-layout guard alongside future plate UX work.
+- Wired 6-button signatures were captured on 2026-10-11 and match HyperSpeed.
+  Wired 2-button signatures remain uncaptured, and that translation lookup now
+  fails closed instead of reporting a readerless remapping session as active.
 
 ### Next Investigation
 

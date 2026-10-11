@@ -4,6 +4,7 @@ import pytest
 from service_runtime_fakes import Session, Store, Worker
 from service_runtime_fakes import connection as _connection
 
+from naga_control.adapters.evdev.discovery import NagaConnection
 from naga_control.config import dump_toml
 from naga_control.domain.defaults import default_configuration
 from naga_control.domain.hardware import HardwareState, SettingsFailure
@@ -40,17 +41,27 @@ async def test_service_starts_one_connection_and_releases_before_shutdown() -> N
 async def test_topology_change_stops_the_old_session_and_builds_a_new_one() -> None:
     worker = Worker()
     sessions: list[Session] = []
+    products: list[str] = []
+
+    def factory(connection: NagaConnection, configuration: Configuration) -> Session:
+        products.append(connection.product_id)
+        return _session(sessions)
+
     service = NagaService(
         lambda: (_connection(),),
         active_configuration,
         worker,
-        lambda connection, configuration: _session(sessions),
+        factory,
     )
     await service.start()
 
-    await service.apply_topology((_connection(),))
+    wireless = _connection()
+    wired_node = replace(wireless.nodes[0], product_id="00e7")
+    wired = replace(wireless, product_id="00e7", transport="wired", nodes=(wired_node,))
+    await service.apply_topology((wired,))
 
     assert len(sessions) == 2
+    assert products == ["00e8", "00e7"]
     assert [session.events for session in sessions] == [["start", "stop"], ["start"]]
     await service.stop()
     assert worker.events == [
@@ -148,6 +159,24 @@ async def test_device_action_state_updates_the_service_snapshot() -> None:
         },
         "observed": {},
     }
+    await service.stop()
+
+
+async def test_snapshot_reports_reader_activity_not_session_existence() -> None:
+    session = Session()
+    service = NagaService(
+        lambda: (_connection(),),
+        active_configuration,
+        Worker(),
+        lambda connection, configuration: session,
+    )
+    await service.start()
+    assert service.snapshot()["remapping_active"] is True
+
+    session.running = False
+    snapshot = service.snapshot()
+    assert snapshot["remapping_active"] is False
+    assert snapshot["mode_ready"] is False
     await service.stop()
 
 
