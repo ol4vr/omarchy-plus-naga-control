@@ -21,6 +21,16 @@ input access, service activation, OpenRazer changes, or hardware writes.
   default and remains required for the pilot. OpenRazer may expose/cache the
   Naga's thumb-grid, logo, and wheel zones, but Naga Control does not apply them.
 
+## Hidden desktop startup
+
+`naga-control --hidden` creates the normal tray integration without showing,
+focusing, or assigning the main window. The GUI singleton uses a separate
+non-activating probe for this mode, so a repeated login launch cannot reveal a
+hidden window or create a second GUI process. A normal `naga-control` launch
+still restores and focuses the existing window. Hugin integrates the hidden
+command through its existing Omarchy+ login helper; Naga Control owns no extra
+daemon or desktop-autostart file.
+
 ## Discovery and activation
 
 The default configuration is no-write discovery. Starting the service in this

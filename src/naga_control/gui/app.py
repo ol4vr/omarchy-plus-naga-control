@@ -1,5 +1,6 @@
 """Compact PySide6 shell bound to the Qt-free presenter and model."""
 
+import argparse
 import concurrent.futures
 import logging
 import sys
@@ -19,13 +20,24 @@ from naga_control.ipc.server import SessionBus, connect_session_bus
 logger = logging.getLogger(__name__)
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="naga-control")
+    parser.add_argument(
+        "--hidden",
+        action="store_true",
+        help="start in the system tray without showing or focusing the window",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO)
     QApplication.setDesktopFileName("org.nagacontrol.NagaControl")
     app = QApplication(sys.argv[:1])
     app.setWindowIcon(QIcon(str(app_icon_path())))
     app.setQuitOnLastWindowClosed(True)
-    instance = GuiInstance.start()
+    instance = GuiInstance.start(activate_existing=not args.hidden)
     if instance is None:
         return 0
     worker = LoopWorker()
@@ -51,7 +63,8 @@ def main() -> int:
     presenter = GuiPresenter(model, open_client=open_client, close_client=close_client)
     window = MainWindow(presenter, model, run)
     instance.set_window(window)
-    window.show()
+    if not args.hidden:
+        window.show()
     run(presenter.refresh)
     exit_code = app.exec()
     worker.stop()
